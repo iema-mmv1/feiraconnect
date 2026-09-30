@@ -87,6 +87,20 @@ body.fc-inside {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+@media (max-width: 700px) {
+  html:has(> body.fc-inside),
+  body.fc-inside {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: auto !important;
+  }
+
+  body.fc-inside #fc-app {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+}
 </style></head>
 <body>
   <main class="layout">
