@@ -678,7 +678,7 @@ window.fcHome=()=>{
  const featuredMarkup=leader?`<button type="button" class="lead-photo" data-expand="${html(leader.id)}" aria-label="Abrir foto líder">${leader.image_url?`<img src="${html(leader.image_url)}" alt="Foto em destaque">`:'📸'}</button><div class="stats"><b>1º • ${html(leader.author_name||person(leader.author_id))}, por enquanto 👀</b><strong>♥ ${Number(leader.likes_count||0)} · 💬 ${Number(leader.comments_count||0)}</strong></div><div class="next-photos">${featured.slice(1,3).map((p,i)=>`<button type="button" data-expand="${html(p.id)}" aria-label="Abrir foto em destaque">${p.image_url?`<img src="${html(p.image_url)}" alt="Foto em destaque">`:'📸'}<span>${i+2}º • ${i?'Na cola 😮‍💨':'Quase lá 😤'}</span></button>`).join('')}</div>`:'<p class="empty-state">A primeira foto em destaque ainda vai chegar! 📸</p>';
  const standTiles=app.stands.slice(0,3).map((st,i)=>`<div class="stand"><b class="position">${i+1}º</b><span class="pic">${['🤖','✨','🎨'][i]}</span><span><b>${html(st.name)}</b><br><small>${['Tá se achando 😎','De olho no topo 👀','Correndo atrás 😤'][i]}</small></span><span class="count">Conhecer</span></div>`).join('')||'<p class="empty-state">Os estandes estão chegando. Fica de olho! 👀</p>';
  const womenTiles=(app.stories||[]).slice(0,3).map(x=>`<button type="button" class="woman" data-go="mulheres"><span class="portrait">${x.image_url?`<img src="${html(x.image_url)}" alt="Retrato de ${html(x.title)}">`:'👩🏽‍💻'}</span><span class="info"><b>${html(x.title)}</b><small>${html(x.summary||'Toque pra conhecer')}</small></span></button>`).join('')||'<p class="empty-state">As histórias estão chegando. ✨</p>';
- return `<div class="fc-dashboard"><header class="topbar"><div class="wrap top"><div class="brand"><i>✦</i> FEIRA CONNECT</div><nav class="nav"><a href="#" data-go="cantinho">Meu cantinho na feira</a><a href="#" data-go="estandes">Estandes</a>${uid()&&isResponsible()?'<a href="#" data-go="meu-estande">Meu estande</a>':''}<a href="#" data-go="ranking">Ranking</a><a href="#" data-go="destaques">Destaques</a>${uid()&&!isResponsible()?'<a href="#" data-go="chat">Chat</a>':''}</nav><div class="icons"><button class="icon" type="button" data-go="notificacoes" aria-label="Notificações">🔔<em></em></button><button class="profile" type="button" data-go="perfil" aria-label="Perfil">${profileImage}</button></div></div></header>
+ return `<div class="fc-dashboard"><header class="topbar"><div class="wrap top"><div class="brand"><i>✦</i> FEIRA CONNECT</div><nav class="nav"><a href="#" data-go="cantinho">Meu cantinho na feira</a><a href="#" data-go="estandes">Estandes</a><a href="#" data-go="ranking">Ranking</a><a href="#" data-go="destaques">Destaques</a>${uid()&&!isResponsible()?'<a href="#" data-go="chat">Chat</a>':''}</nav><div class="icons"><button class="icon" type="button" data-go="notificacoes" aria-label="Notificações">🔔<em></em></button><button class="profile" type="button" data-go="perfil" aria-label="Perfil">${profileImage}</button></div></div></header>
 <main class="wrap"><section class="hero"><div class="copy"><span class="live">🟢 FEIRA ROLANDO AGORA</span><h1>E aí, já chegou na <span>feira? 😏</span></h1><p>A galera já tá mostrando tudo. E a sua foto, vai ficar só no rolo da câmera?</p><button type="button" data-new-post>📷 Postar uma foto</button><button type="button" class="white" data-go="estandes">🔥 Ver o que tá rolando</button></div><div class="heroart" aria-hidden="true">FEIRA DAS PROFISSÕES<br><span>📸</span></div></section>
 <div class="online"><span>🟢</span><strong id="fc-visitor-count">A galera tá chegando por aqui.</strong><span>E nenhuma delas é feia. 😎</span><small>Contador aguardando dados reais.</small></div>
 <div class="grid"><section class="panel mural" id="mural"><h2 class="title">Cadê a tua foto nessa história? 📸</h2><p class="sub">A galera já começou a resenha. Vai deixar todo mundo postar menos tu?</p><div class="chips"><button type="button" class="chip active" data-go="mural">Chegaram agora</button><button type="button" class="chip" data-go="mural">Bombando 🔥</button><button type="button" class="chip" data-go="estandes">Todos os estandes ▾</button></div><div class="photos">${photoTiles}</div></section>
@@ -1361,6 +1361,23 @@ window.fcMyStand = () => {
 window.fcStands = () => `
   <h1>Estandes da feira 🎪</h1>
   <p>Conhece a galera antes de dar teu voto!</p>
+
+  ${uid() && isResponsible() ? `
+    <section class="fc-card">
+      <h2>Teu estande na feira ✨</h2>
+      <p>
+        ${app.stands.some(st => st.owner_id === uid())
+          ? 'Teu estande já está cadastrado. Pode atualizar a apresentação.'
+          : 'Ainda não cadastrou teu estande? Começa por aqui!'}
+      </p>
+      <button type="button" data-go="meu-estande">
+        ${app.stands.some(st => st.owner_id === uid())
+          ? 'Editar meu estande'
+          : 'Cadastrar meu estande'}
+      </button>
+    </section>
+  ` : ''}
+
   <div class="fc-grid">
     ${app.stands.map(st => `
       <article class="fc-card">
@@ -1373,7 +1390,6 @@ window.fcStands = () => `
     `).join('') || '<p>Os estandes ainda vão chegar. 👀</p>'}
   </div>
 `;
-
 function bindStands() {
   document.querySelectorAll('[data-fc-stand-detail]').forEach(button => {
     button.onclick = () => {
