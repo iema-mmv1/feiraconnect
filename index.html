@@ -1588,28 +1588,7 @@ window.fcStands = () => `
     `).join('') || '<p>Os estandes ainda vão chegar. 👀</p>'}
   </div>
 `;
-function bindStands() {
-  document.querySelectorAll('[data-fc-stand-detail]').forEach(button => {
-    button.onclick = () => {
-      const st = app.stands.find(
-        item => item.id === button.dataset.fcStandDetail
-      );
-      if (!st) return;
 
-      fcModal(`
-        <h2>${html(st.name)}</h2>
-        <p>${html(
-          st.description ||
-          'Esse estande ainda está preparando sua apresentação.'
-        )}</p>
-        ${st.image_url
-          ? `<img class="fc-photo" src="${html(st.image_url)}"
-                  alt="Foto do estande ${html(st.name)}">`
-          : ''}
-      `);
-    };
-  });
-}
 function bindStands() {
   document.querySelectorAll('[data-fc-stand-detail]').forEach(button => {
     button.onclick = () => {
