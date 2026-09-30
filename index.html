@@ -1257,7 +1257,7 @@ window.fcMyStand = () => {
     { id: 10, skin: '#805844', hair: '#262126', shirt: '#e39837', hairStyle: 4, accessory: 2 }
   ];
 
-  function mascotPreview(m) {
+  function mascotPreview(m, gender) {
     const hairstyles = [
       `<circle cx="52" cy="29" r="17" fill="${m.hair}"/>
        <circle cx="36" cy="35" r="9" fill="${m.hair}"/>
@@ -1308,7 +1308,22 @@ window.fcMyStand = () => {
         <path d="M47 57 Q52 61 57 57"
               fill="none" stroke="#8d464a" stroke-width="2"
               stroke-linecap="round"/>
-        ${accessory[m.accessory]}
+                ${accessory[m.accessory]}
+        ${gender === 'menina' ? `
+          <path d="M38 97 L66 97 L78 131 H26 Z"
+                fill="${m.shirt}"/>
+          <path d="M45 81 L52 89 L59 81"
+                fill="none" stroke="#fff" stroke-width="3"/>
+          <circle cx="70" cy="34" r="5" fill="#ffe05d"/>
+          <circle cx="75" cy="31" r="5" fill="#ffe05d"/>
+        ` : gender === 'menino' ? `
+          <path d="M43 79 L52 87 L61 79"
+                fill="none" stroke="#fff" stroke-width="3"/>
+          <path d="M34 111 H70" stroke="#34415e"
+                stroke-width="5"/>
+          <path d="M52 88 V109" stroke="#fff"
+                stroke-width="2"/>
+        ` : ''}
       </svg>
     `;
   }
@@ -1325,7 +1340,20 @@ window.fcMyStand = () => {
 
     const form = document.getElementById('fc-my-stand-form');
     if (!form) return;
+const genderSelect = form.elements.namedItem('mascot_gender');
 
+genderSelect.onchange = () => {
+  for (const m of mascots) {
+    const preview = form.querySelector(
+      `[data-fc-mascot-preview="${m.id}"]`
+    );
+
+    if (preview) {
+      preview.innerHTML = mascotPreview(m, genderSelect.value);
+    }
+  }
+};
+    
     form.onsubmit = async event => {
       event.preventDefault();
 
@@ -1459,7 +1487,9 @@ window.fcMyStand = () => {
                                 gap:6px;padding:12px;border:2px solid #d4ddeb;
                                 border-radius:14px;text-align:center;
                                 opacity:${taken ? '.45' : '1'}">
-                    ${mascotPreview(m)}
+                    <span data-fc-mascot-preview="${m.id}">
+  ${mascotPreview(m, ownStand?.mascot_gender || '')}
+</span>
                     <span>Mascote ${m.id}${mine ? ' — teu' : ''}</span>
                     <input type="radio" name="mascot_id"
                            value="${m.id}"
