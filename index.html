@@ -840,9 +840,151 @@ function fcOpenProfilePanel() {
               class="fc-danger" style="margin-top:14px">
         Sair da conta
       </button>
+      <div style="margin-top:22px;border-top:1px solid #dce9f6;padding-top:16px">
+  <h3 style="margin:0 0 6px">Tuas fotos na feira 📸</h3>
+  <p style="margin:0 0 12px">Olha a moral que a galera deu pra cada momento!</p>
+  <div id="fc-my-photos"
+       style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+              gap:10px">
+    <p>Carregando tuas fotos...</p>
+  </div>
+</div>
     </section>
   `);
+async function fcLoadMyPhotos() {
+  const box = document.getElementById('fc-my-photos');
+  if (!box) return;
 
+  try {
+    const { data: posts, error: postsError } = await api
+      .from('posts')
+      .select('id,image_url,caption,created_at')
+      .eq('author_id', uid())
+      .is('hidden_at', null)
+      .order('created_at', { ascending: false });
+
+    if (postsError) throw postsError;
+
+    if (!posts?.length) {
+      box.innerHTML =
+        '<p>Ainda não tem foto tua por aqui. Bora postar a primeira? 📸</p>';
+      return;
+    }
+
+    const ids = posts.map(post => post.id);
+
+    const [
+      { data: likes, error: likesError },
+      { data: comments, error: commentsError }
+    ] = await Promise.all([
+      api.from('post_likes')
+        .select('post_id,user_id')
+        .in('post_id', ids),
+      api.from('comments')
+        .select('post_id,id')
+        .in('post_id', ids)
+        .is('hidden_at', null)
+    ]);
+
+    if (likesError) throw likesError;
+    if (commentsError) throw commentsError;
+
+    box.innerHTML = posts.map(post => {
+      const totalLikes = (likes || [])
+        .filter(like => like.post_id === post.id).length;
+      const totalComments = (comments || [])
+        .filter(comment => comment.post_id === post.id).length;
+
+      return `
+        <article style="border:1px solid #dce9f6;border-radius:12px;
+                        overflow:hidden;background:white">
+          <button type="button" data-fc-my-photo="${html(post.id)}"
+                  aria-label="Abrir foto"
+                  style="display:block;width:100%;padding:0;
+                         border:0;background:none">
+            <img src="${html(post.image_url)}"
+                 alt="${html(post.caption || 'Foto da feira')}"
+                 style="display:block;width:100%;height:135px;
+                        object-fit:cover">
+          </button>
+          <div style="display:flex;gap:5px;padding:6px">
+            <button type="button" data-fc-my-likes="${html(post.id)}"
+                    aria-label="Ver curtidas">♥ ${totalLikes}</button>
+            <button type="button" data-fc-my-comments="${html(post.id)}"
+                    aria-label="Ver comentários">💬 ${totalComments}</button>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    box.querySelectorAll('[data-fc-my-photo]').forEach(button => {
+      button.onclick = () => {
+        const postId = button.dataset.fcMyPhoto;
+        document.getElementById('fc-dialog').close();
+        expandPhoto(postId);
+
+        // Mantém o atalho para comentários funcional também na foto aberta.
+        const commentsButton = document.getElementById('fc-open-comments');
+        if (commentsButton) {
+          commentsButton.onclick = () => {
+            document.getElementById('fc-dialog').close();
+            showComments(postId);
+          };
+        }
+      };
+    });
+
+    box.querySelectorAll('[data-fc-my-comments]').forEach(button => {
+      button.onclick = () => {
+        document.getElementById('fc-dialog').close();
+        showComments(button.dataset.fcMyComments);
+      };
+    });
+
+    box.querySelectorAll('[data-fc-my-likes]').forEach(button => {
+      button.onclick = async () => {
+        try {
+          const peopleIds = (likes || [])
+            .filter(like => like.post_id === button.dataset.fcMyLikes)
+            .map(like => like.user_id);
+
+          if (!peopleIds.length) {
+            window.fcHint?.('Essa foto ainda espera a primeira curtida!');
+            return;
+          }
+
+          const { data: people, error } = await api
+            .from('profiles')
+            .select('id,name')
+            .in('id', peopleIds);
+
+          if (error) throw error;
+
+          document.getElementById('fc-dialog').close();
+          fcModal(`
+            <h2>Quem deu moral pra essa foto? ♥</h2>
+            ${(people || [])
+              .map(person => `<p>${html(person.name || 'Participante')}</p>`)
+              .join('') || '<p>Não foi possível mostrar os nomes.</p>'}
+          `);
+        } catch (error) {
+          console.error(error);
+          window.fcHint?.(
+            error?.message || 'Não consegui carregar as curtidas.'
+          );
+        }
+      };
+    });
+  } catch (error) {
+    console.error(error);
+    box.textContent =
+      'Não consegui carregar tuas fotos: ' +
+      (error?.message || 'tenta novamente.');
+  }
+}
+
+fcLoadMyPhotos();
+  
   const picker = document.getElementById('fc-profile-panel-file');
   document.getElementById('fc-profile-panel-choose').onclick = () => picker.click();
 
