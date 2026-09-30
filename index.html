@@ -373,6 +373,42 @@ body.fc-inside {
     height: 33px;
   }
 }
+#fc-app #fc-cantinho-fotos button.fc-cantinho-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #222;
+  box-shadow: none;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#fc-app #fc-cantinho-fotos button.fc-cantinho-action:hover {
+  background: #f3f4f6;
+}
+
+#fc-app #fc-cantinho-fotos button.fc-cantinho-action:active {
+  transform: scale(.94);
+}
+
+#fc-app #fc-cantinho-fotos button.fc-cantinho-action svg {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 </style>
 <style id="fc-app-css">
 #fc-app{display:none;min-height:100vh;background:#f5f9ff;color:#202c46;font-family:system-ui,-apple-system,Segoe UI,sans-serif}body.fc-inside>.layout,body.fc-inside>#fc-guest-entry{display:none!important}body.fc-inside #fc-app{display:block}#fc-app *,#fc-dialog *{box-sizing:border-box}#fc-app header{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:white;padding:11px 3%;box-shadow:0 2px 12px #2445791a}#fc-app header .fc-brand{font-weight:800;color:#ec2c83;margin-right:auto}#fc-app nav{display:flex;gap:5px;flex-wrap:wrap}#fc-app button,#fc-dialog button{font:inherit;background:#2578de;color:white;border:0;border-radius:11px;padding:9px 12px;cursor:pointer}#fc-app button:disabled,#fc-dialog button:disabled{opacity:.5;cursor:not-allowed}#fc-app button.fc-alt,#fc-dialog button.fc-alt{background:#e9f1fd;color:#22467a}#fc-app button.fc-danger,#fc-dialog button.fc-danger{background:#cf4267}#fc-app main{display:block;max-width:1060px;margin:auto;padding:16px}#fc-app .fc-card,#fc-dialog .fc-card{background:white;border-radius:19px;margin:12px 0;padding:17px;box-shadow:0 4px 22px #243c6216}#fc-app .fc-hero{background:linear-gradient(110deg,#dff1ff,#ffe3ef,#fff4cf)}#fc-app .fc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}#fc-app .fc-row,#fc-dialog .fc-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}#fc-app .fc-photo,#fc-dialog .fc-photo{width:100%;max-height:390px;object-fit:cover;border-radius:13px}#fc-app .fc-avatar,#fc-dialog .fc-avatar{width:48px;height:48px;object-fit:cover;border-radius:50%}#fc-app h1{font-size:clamp(1.7rem,4vw,2.5rem)}#fc-app .fc-tag{display:inline-block;border-radius:99px;padding:5px 10px;background:#ffdf83;color:#62460e}#fc-app .fc-muted,#fc-dialog .fc-muted{color:#63728c}#fc-app input,#fc-app textarea,#fc-app select,#fc-dialog input,#fc-dialog textarea,#fc-dialog select{font:inherit;width:100%;border:1px solid #cad8e9;border-radius:11px;padding:10px;margin:7px 0 12px}#fc-app textarea,#fc-dialog textarea{min-height:85px}#fc-dialog{border:0;border-radius:20px;width:min(95vw,570px);max-height:88vh;overflow:auto;padding:19px;box-shadow:0 15px 60px #14244155}#fc-dialog::backdrop{background:#142544a1}#fc-app .fc-face{font-size:2.8rem;display:inline-block}#fc-app .fc-podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;text-align:center}#fc-app .fc-step{padding:15px;min-width:82px;background:#b9d4f5;border-radius:12px 12px 0 0}#fc-app .fc-step.fc-gold{height:155px;background:#ffe185}#fc-app .fc-step.fc-silver{height:115px}#fc-app .fc-step.fc-bronze{height:83px}#fc-guest-entry{position:fixed;bottom:15px;right:15px;z-index:25;border:0;border-radius:15px;padding:10px 16px;background:#2578de;color:white;cursor:pointer}#fc-app [hidden]{display:none!important}@media(prefers-reduced-motion:reduce){#fc-app *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
