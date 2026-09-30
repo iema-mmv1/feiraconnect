@@ -759,20 +759,22 @@ function fcOpenProfilePanel() {
         <h2 style="margin:0 0 8px">Teu cantinho na feira ✨</h2>
         <p>Uma foto e um nome pra galera te reconhecer!</p>
 
-        <div style="position:absolute;inset:0;width:100%;height:100%;
-       max-width:100%;max-height:100%;object-fit:cover;
-       border-radius:50%;
-       display:${currentPhoto ? 'block' : 'none'}"
-          <img id="fc-profile-panel-preview"
-               src="${html(currentPhoto)}"
-               alt="Prévia da sua foto de perfil"
-               style="width:100%;height:100%;object-fit:cover;
-                      display:${currentPhoto ? 'block' : 'none'}">
-          <span id="fc-profile-panel-placeholder"
-                style="font-size:2.2rem;
-                       display:${currentPhoto ? 'none' : 'block'}">👤</span>
-        </div>
-
+        <div style="position:relative;width:90px;height:90px;
+            border:4px solid white;border-radius:50%;
+            overflow:hidden;margin:12px auto;
+            display:grid;place-items:center;background:#ffd8c0">
+  <img id="fc-profile-panel-preview"
+       src="${html(currentPhoto)}"
+       alt="Prévia da sua foto de perfil"
+       style="position:absolute;inset:0;
+              width:100%;height:100%;
+              max-width:100%;max-height:100%;
+              object-fit:cover;border-radius:50%;
+              display:${currentPhoto ? 'block' : 'none'}">
+  <span id="fc-profile-panel-placeholder"
+        style="font-size:2.2rem;
+               display:${currentPhoto ? 'none' : 'block'}">👤</span>
+</div>
         <strong>${html(currentName || 'Participante')}</strong>
         <p style="font-size:.8rem">${html(app.user?.email || '')}</p>
       </div>
