@@ -723,10 +723,23 @@ async function fcLoadCantinhoFotos() {
             <div style="display:flex;gap:12px;
                         flex-wrap:wrap;padding:8px 2px;
                         font-size:.85rem">
-              <span aria-label="${likes} curtidas">♥ ${likes}</span>
-              <span aria-label="${comments} comentários">
-                💬 ${comments}
-              </span>
+             <button
+  type="button"
+  data-cantinho-like="${safe(post.id)}"
+  aria-label="Curtir ou descurtir foto. ${likes} curtidas"
+  style="min-width:64px;min-height:44px;padding:8px 12px;font-size:1rem;background:#ffe3ef;color:#a3155c"
+>
+  💗 ${likes}
+</button>
+<button
+  type="button"
+  class="fc-alt"
+  data-cantinho-comments="${safe(post.id)}"
+  aria-label="Abrir comentários. ${comments} comentários"
+  style="min-width:64px;min-height:44px;padding:8px 12px;font-size:1rem"
+>
+  💬 ${comments}
+</button>
             </div>
             <span aria-label="${comments} comentários">💬 ${comments}</span>
 </div>
@@ -760,6 +773,31 @@ async function fcLoadCantinhoFotos() {
         `);
       };
     });
+    box.querySelectorAll('[data-cantinho-like]').forEach(button => {
+  button.onclick = async () => {
+    if (!mustLogin()) return;
+
+    button.disabled = true;
+    const originalText = button.textContent;
+
+    try {
+      await invoke('toggle_post_like', {
+        p_post_id: button.dataset.cantinhoLike
+      });
+      await fcLoadCantinhoFotos();
+    } catch (error) {
+      console.error(error);
+      alert(error.message || 'Não consegui curtir a foto.');
+      if (button.isConnected) button.textContent = originalText;
+    } finally {
+      if (button.isConnected) button.disabled = false;
+    }
+  };
+});
+
+box.querySelectorAll('[data-cantinho-comments]').forEach(button => {
+  button.onclick = () => showComments(button.dataset.cantinhoComments);
+});
     box.querySelectorAll('[data-cantinho-remover]').forEach(button => {
   button.onclick = async () => {
     const photoId = button.dataset.cantinhoRemover;
