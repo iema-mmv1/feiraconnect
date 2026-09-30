@@ -809,7 +809,26 @@ function standName(id){return app.stands.find(s=>s.id===id)?.name||''}
 function photoCard(p,large=false){const n=Number(p.likes_count||0),comments=Number(p.comments_count||0),s=app.stands.find(x=>x.id===p.stand_id);
 return `<article class="fc-card fc-post" data-post="${safe(p.id)}">${p.image_url?`<img class="fc-photo" src="${safe(p.image_url)}" alt="Foto publicada na feira" loading="lazy" data-expand="${safe(p.id)}">`:''}<div class="fc-row"><span class="fc-muted">${safe(p.author_name||person(p.author_id))}</span>${s?`<span class="fc-tag">${safe(s.name)}</span>`:''}</div><p>${safe(p.caption||'')}</p><div class="fc-row"><button type="button" data-like="${safe(p.id)}">💗 ${n}</button><button type="button" class="fc-alt" data-comments="${safe(p.id)}">💬 ${comments}</button><button type="button" class="fc-alt" data-report-post="${safe(p.id)}" aria-label="Opções e denúncia da foto">⋯</button></div>${large&&s?`<p class="fc-muted">Personagem do estande: ${safe(s.character_name||'a escolher')}</p>`:''}</article>`}
 let postFilter='novas',postStand='';
-window.fcHome=()=>{
+async function fcLoadVisitorCount() {
+  const label = document.getElementById('fc-visitor-count');
+  if (!label || !api || app.page !== 'inicio') return;
+
+  try {
+    const { data, error } = await api.rpc('fc_total_accounts_entered');
+    if (error) throw error;
+    if (!label.isConnected || app.page !== 'inicio') return;
+
+    const total = Number(data) || 0;
+    label.textContent =
+      `${total} ${total === 1 ? 'conta já entrou' : 'contas já entraram'} na feira`;
+  } catch (error) {
+    console.error('Contador de contas:', error);
+    if (label.isConnected) {
+      label.textContent = 'Contador indisponível no momento.';
+    }
+  }
+}
+ window.fcHome=()=>{
  const visible=app.posts.filter(p=>!p.hidden_at);
  const featured=[...visible].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0));
  const profileImage=app.profile?.avatar_url?`<img src="${html(app.profile.avatar_url)}" alt="Sua foto de perfil">`:'👤';
