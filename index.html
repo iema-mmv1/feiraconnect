@@ -405,7 +405,7 @@ function setPage(page){app.page=page;
 window.fcRender?.();
 $('fc-main')?.focus();
 window.scrollTo(0,0)}window.fcPage=setPage;
-function nav()const pages=[['cantinho','Meu cantinho'],['estandes','Stands'],['destaques','Destaques'],['mulheres','Mulheres na tecnologia']];
+function nav(){const pages=[['cantinho','Meu cantinho'],['estandes','Stands'],['destaques','Destaques'],['mulheres','Mulheres na tecnologia']];
 if(uid()&&!isResponsible())pages.push(['chat','Chat']);
 if(isResponsible())pages.push(['meu-estande','Meu estande']);
 if(isAdmin())pages.push(['admin','Admin']);
