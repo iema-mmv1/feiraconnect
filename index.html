@@ -405,13 +405,12 @@ function setPage(page){app.page=page;
 window.fcRender?.();
 $('fc-main')?.focus();
 window.scrollTo(0,0)}window.fcPage=setPage;
-function nav(){const pages=[['cantinho','Meu cantinho'],['estandes','Stands'],['destaques','Destaques'],['mulheres','Mulheres na tecnologia']];
-if(uid()&&!isResponsible())pages.push(['chat','Chat']);
-if(isResponsible())pages.push(['meu-estande','Meu estande']);
-if(isAdmin())pages.push(['admin','Admin']);
-$('fc-nav').innerHTML=pages.map(([id,label])=>`<button type="button" class="fc-alt" data-page="${id}">${label}</button>`).join('');
-$('fc-nav').querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+function nav(){
+$('fc-nav').innerHTML=`<button type="button" class="fc-alt" data-page="inicio">← Voltar</button>`;
+$('fc-nav').querySelector('[data-page="inicio"]').onclick=()=>setPage('inicio');
 $('fc-profile').textContent=app.profile?.name||'Entrar / perfil';
+$('fc-bell-count').textContent=app.notifications.filter(n=>!n.read_at).length||''
+}
 $('fc-bell-count').textContent=app.notifications.filter(n=>!n.read_at).length||''}
 window.fcRender=()=>{nav();
 const views={inicio:window.fcHome,mural:window.fcWall,cantinho:window.fcCantinho,estandes:window.fcStands,ranking:window.fcRanking,destaques:window.fcHighlights,mulheres:window.fcWomen,perfil:window.fcProfile,notificacoes:window.fcNotices,chat:window.fcChats,'meu-estande':window.fcMyStand,admin:window.fcAdmin,resultado:window.fcResult};
