@@ -812,17 +812,15 @@ function newPost(){
   previewUrl=URL.createObjectURL(file);
 
   const preview=$('fc-post-preview');
-  preview.src=previewUrl;
-  preview.style.display='block';
- };
+preview.src=previewUrl;
+preview.style.display='block';
+applyFramePreview(); };
 
  const gallery=$('fc-post-gallery-input');
  $('fc-open-gallery').onclick=()=>gallery.click();
  gallery.onchange=e=>selectFile(e.target.files?.[0]);
 
  const frameChoice=$('fc-post-frame-choice');
-
- Object.assign(preview.style,chosenStyle);
 
   const styles={
    none:{
@@ -884,7 +882,6 @@ function newPost(){
   };
 
   const chosenStyle=styles[frameChoice.value]||styles.none;
-  Object.assign(preview.style,chosenStyle);
   preview.style.boxSizing='border-box';
  };
 
