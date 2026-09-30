@@ -203,24 +203,44 @@ html,body{height:100%;overflow:hidden}.layout{height:100svh;min-height:0;overflo
 <script>
 (function(){'use strict';
 const loginForm=document.getElementById('loginForm');
-const toast=document.getElementById('toast');let timer;
-function hint(message){toast.textContent=message;toast.style.display='block';clearTimeout(timer);timer=setTimeout(()=>toast.style.display='none',4500)}
-function openApp(){document.body.classList.add('fc-inside');document.getElementById('fc-main').focus();window.fcRender?.()}
+const toast=document.getElementById('toast');
+let timer;
+function hint(message){toast.textContent=message;
+toast.style.display='block';
+clearTimeout(timer);
+timer=setTimeout(()=>toast.style.display='none',4500)}
+function openApp(){document.body.classList.add('fc-inside');
+document.getElementById('fc-main').focus();
+window.fcRender?.()}
 function showLogin(){document.body.classList.remove('fc-inside')}
-window.fcOpenApp=openApp;window.fcShowLogin=showLogin;window.fcHint=hint;
-document.getElementById('togglePassword').addEventListener('click',()=>{const field=document.getElementById('password');field.type=field.type==='password'?'text':'password';document.getElementById('togglePassword').setAttribute('aria-label',field.type==='password'?'Mostrar senha':'Ocultar senha')});
-loginForm.addEventListener('submit',async event=>{event.preventDefault();if(typeof window.fcSignIn!=='function')return hint('A Parte 4 ainda não foi adicionada.');await window.fcSignIn(document.getElementById('email').value,document.getElementById('password').value)});
+window.fcOpenApp=openApp;
+window.fcShowLogin=showLogin;
+window.fcHint=hint;
+document.getElementById('togglePassword').addEventListener('click',()=>{const field=document.getElementById('password');
+field.type=field.type==='password'?'text':'password';
+document.getElementById('togglePassword').setAttribute('aria-label',field.type==='password'?'Mostrar senha':'Ocultar senha')});
+loginForm.addEventListener('submit',async event=>{event.preventDefault();
+if(typeof window.fcSignIn!=='function')return hint('A Parte 4 ainda não foi adicionada.');
+await window.fcSignIn(document.getElementById('email').value,document.getElementById('password').value)});
 document.getElementById('fc-guest-entry').addEventListener('click',openApp);
 document.getElementById('fc-bell').addEventListener('click',()=>window.fcPage?.('notificacoes'));
 document.getElementById('fc-profile').addEventListener('click',()=>window.fcPage?.('perfil'));
-document.querySelectorAll('[data-demo]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();if(el.classList.contains('forgot'))window.fcRecover?.();else hint('Esta ação será habilitada pela próxima parte do sistema.')}));
-const signup=document.createElement('button');signup.type='button';signup.className='primary';signup.style.marginTop='10px';signup.textContent='Criar conta';signup.addEventListener('click', () => {
+document.querySelectorAll('[data-demo]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();
+if(el.classList.contains('forgot'))window.fcRecover?.();
+else hint('Esta ação será habilitada pela próxima parte do sistema.')}));
+const signup=document.createElement('button');
+signup.type='button';
+signup.className='primary';
+signup.style.marginTop='10px';
+signup.textContent='Criar conta';
+signup.addEventListener('click', () => {
   if (typeof window.fcRegister === 'function') {
     window.fcRegister();
   } else {
     hint('A função de cadastro ainda não foi carregada.');
   }
-});loginForm.after(signup);
+});
+loginForm.after(signup);
 })();
 </script>
 <!-- PARTE 4: núcleo do aplicativo. Colar imediatamente após a Parte 3. Não fechar este script; a Parte 5 continua aqui. -->
@@ -237,46 +257,204 @@ const app={page:'inicio',user:null,profile:null,stands:[],posts:[],votes:[],stor
 const uid=()=>app.user?.id||null;
 const isAdmin=()=>app.profile?.role==='admin';
 const isResponsible=()=>app.profile?.role==='responsavel';
-const mustLogin=()=>{if(uid())return true;fcModal('<h2>Entre para participar</h2><p>Visitantes podem ver a feira. Para interagir, entre na sua conta.</p><button type="button" onclick="fcShowLogin()">Ir ao login</button>');return false};
-function fcModal(markup){const d=$('fc-dialog');d.innerHTML=markup+'<p><button class="fc-alt" type="button" onclick="document.getElementById(\'fc-dialog\').close()">Fechar</button></p>';d.showModal()}
-function fail(error){console.error(error);window.fcHint?.(error?.message||String(error)||'Não foi possível concluir a ação.')}
-async function query(table,options={}){if(!api)throw Error('Configure a URL e a chave pública do Supabase na Parte 4 para usar dados reais.');let q=api.from(table).select(options.columns||'*');for(const [column,value] of Object.entries(options.eq||{}))q=q.eq(column,value);if(options.order)q=q.order(options.order,{ascending:!!options.asc});if(options.limit)q=q.limit(options.limit);const {data,error}=await q;if(error)throw error;return data||[]}
-async function insert(table,value){if(!api)throw Error('Supabase ainda não configurado.');const {data,error}=await api.from(table).insert(value).select().single();if(error)throw error;return data}
-async function update(table,id,value){if(!api)throw Error('Supabase ainda não configurado.');const {data,error}=await api.from(table).update(value).eq('id',id).select().single();if(error)throw error;return data}
-async function invoke(name,args={}){if(!api)throw Error('Supabase ainda não configurado.');const {data,error}=await api.rpc(name,args);if(error)throw error;return data}
-async function upload(bucket,file){if(!api)throw Error('Supabase ainda não configurado.');if(!uid())throw Error('Faça login para enviar imagens.');if(!file||!file.type.startsWith('image/'))throw Error('Escolha uma imagem válida.');if(file.size>6*1024*1024)throw Error('Imagem acima do limite de 6 MB.');const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');const path=`${uid()}/${crypto.randomUUID()}.${ext}`;const {error}=await api.storage.from(bucket).upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;const {data}=api.storage.from(bucket).getPublicUrl(path);return data.publicUrl}
-function imagePicker(choose){fcModal(`<h2>Escolha a origem da imagem</h2><label>Câmera<input id="fc-camera" type="file" accept="image/*" capture="environment"></label><label>Galeria<input id="fc-gallery" type="file" accept="image/*"></label>`);for(const id of ['fc-camera','fc-gallery'])$(id).onchange=e=>{const file=e.target.files?.[0];$('fc-dialog').close();if(file)choose(file)}}
-async function loadSession(){if(!api)return;try{const {data,error}=await api.auth.getSession();if(error)throw error;app.user=data.session?.user||null;await loadProfile();if(uid())window.fcOpenApp();else window.fcRender?.()}catch(e){fail(e)}}
-async function loadProfile(){app.profile=null;if(!uid()||!api)return;const {data,error}=await api.from('profiles').select('*').eq('id',uid()).maybeSingle();if(error)throw error;app.profile=data}
-window.fcSignIn=async(email,password)=>{try{if(!api)throw Error('O Supabase precisa ser configurado antes de entrar.');const {data,error}=await api.auth.signInWithPassword({email:email.trim(),password});if(error)throw error;app.user=data.user;await loadProfile();window.fcOpenApp();await refresh()}catch(e){fail(e)}};
-window.fcRegister=()=>{window.fcOpenApp();fcModal(`<h2>Criar conta</h2><form id="fc-register"><label>Nome<input name="name" required minlength="2"></label><label>E-mail<input name="email" type="email" required></label><label>Senha<input name="password" type="password" required minlength="6"></label><button type="submit">Cadastrar</button></form>`);$('fc-register').onsubmit=async e=>{e.preventDefault();try{if(!api)throw Error('Configure Supabase Auth para cadastrar contas.');const f=e.currentTarget;const name=f.elements.name.value.trim();const {data,error}=await api.auth.signUp({email:f.elements.email.value.trim(),password:f.elements.password.value,options:{data:{name}}});if(error)throw error;$('fc-dialog').close();window.fcHint?.(data.session?'Conta criada.':'Confira seu e-mail para confirmar a conta.');if(data.session){app.user=data.user;await loadProfile();await refresh()}}catch(err){fail(err)}}};
-window.fcRecover=()=>{fcModal(`<h2>Recuperar senha</h2><form id="fc-recover"><input name="email" type="email" required placeholder="Seu e-mail"><button type="submit">Enviar recuperação</button></form>`);$('fc-recover').onsubmit=async e=>{e.preventDefault();try{if(!api)throw Error('Configure Supabase Auth.');const {error}=await api.auth.resetPasswordForEmail(e.currentTarget.elements.email.value,{redirectTo:location.origin+location.pathname});if(error)throw error;$('fc-dialog').close();window.fcHint?.('Confira o e-mail enviado para recuperação.')}catch(err){fail(err)}}};
-async function signOut(){try{if(api){const {error}=await api.auth.signOut();if(error)throw error}app.user=null;app.profile=null;window.fcShowLogin();window.fcRender?.()}catch(e){fail(e)}}
-async function refresh(){if(!api){window.fcRender?.();return}try{const [stands,posts,stories]=await Promise.all([query('stands',{order:'created_at'}),query('posts',{order:'created_at',asc:false,limit:100}),query('women_stories',{eq:{published:true},order:'created_at',asc:false})]);app.stands=stands;app.posts=posts;app.stories=stories;if(uid()){app.notifications=await query('notifications',{eq:{recipient_id:uid()},order:'created_at',asc:false,limit:80})}const [{data:setting,error:settingError}]=await Promise.all([api.from('fair_settings').select('*').eq('id',1).maybeSingle()]);if(settingError)throw settingError;app.closed=!!setting?.closed;window.fcRender?.()}catch(e){fail(e)}}
-function setPage(page){app.page=page;window.fcRender?.();$('fc-main')?.focus();window.scrollTo(0,0)}window.fcPage=setPage;
-function nav(){const pages=[['inicio','Início'],['mural','Mural'],['estandes','Estandes'],['ranking','Ranking'],['destaques','Destaques'],['mulheres','Mulheres na tecnologia']];if(uid()&&!isResponsible())pages.push(['chat','Chat']);if(isResponsible())pages.push(['meu-estande','Meu estande']);if(isAdmin())pages.push(['admin','Admin']);$('fc-nav').innerHTML=pages.map(([id,label])=>`<button type="button" class="fc-alt" data-page="${id}">${label}</button>`).join('');$('fc-nav').querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>setPage(b.dataset.page));$('fc-profile').textContent=app.profile?.name||'Entrar / perfil';$('fc-bell-count').textContent=app.notifications.filter(n=>!n.read_at).length||''}
-window.fcRender=()=>{nav();const views={inicio:window.fcHome,mural:window.fcWall,estandes:window.fcStands,ranking:window.fcRanking,destaques:window.fcHighlights,mulheres:window.fcWomen,perfil:window.fcProfile,notificacoes:window.fcNotices,chat:window.fcChats,'meu-estande':window.fcMyStand,admin:window.fcAdmin,resultado:window.fcResult};$('fc-main').innerHTML=views[app.page]?.()||'<div class="fc-card"><h1>Feira Connect</h1><p>Continue juntando as partes na ordem: as próximas incluem as telas e ações desta seção.</p></div>';window.fcBindPage?.()};
+const mustLogin=()=>{if(uid())return true;
+fcModal('<h2>Entre para participar</h2><p>Visitantes podem ver a feira. Para interagir, entre na sua conta.</p><button type="button" onclick="fcShowLogin()">Ir ao login</button>');
+return false};
+function fcModal(markup){const d=$('fc-dialog');
+d.innerHTML=markup+'<p><button class="fc-alt" type="button" onclick="document.getElementById(\'fc-dialog\').close()">Fechar</button></p>';
+d.showModal()}
+function fail(error){console.error(error);
+window.fcHint?.(error?.message||String(error)||'Não foi possível concluir a ação.')}
+async function query(table,options={}){if(!api)throw Error('Configure a URL e a chave pública do Supabase na Parte 4 para usar dados reais.');
+let q=api.from(table).select(options.columns||'*');
+for(const [column,value] of Object.entries(options.eq||{}))q=q.eq(column,value);
+if(options.order)q=q.order(options.order,{ascending:!!options.asc});
+if(options.limit)q=q.limit(options.limit);
+const {data,error}=await q;
+if(error)throw error;
+return data||[]}
+async function insert(table,value){if(!api)throw Error('Supabase ainda não configurado.');
+const {data,error}=await api.from(table).insert(value).select().single();
+if(error)throw error;
+return data}
+async function update(table,id,value){if(!api)throw Error('Supabase ainda não configurado.');
+const {data,error}=await api.from(table).update(value).eq('id',id).select().single();
+if(error)throw error;
+return data}
+async function invoke(name,args={}){if(!api)throw Error('Supabase ainda não configurado.');
+const {data,error}=await api.rpc(name,args);
+if(error)throw error;
+return data}
+async function upload(bucket,file){if(!api)throw Error('Supabase ainda não configurado.');
+if(!uid())throw Error('Faça login para enviar imagens.');
+if(!file||!file.type.startsWith('image/'))throw Error('Escolha uma imagem válida.');
+if(file.size>6*1024*1024)throw Error('Imagem acima do limite de 6 MB.');
+const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+const path=`${uid()}/${crypto.randomUUID()}.${ext}`;
+const {error}=await api.storage.from(bucket).upload(path,file,{contentType:file.type,upsert:false});
+if(error)throw error;
+const {data}=api.storage.from(bucket).getPublicUrl(path);
+return data.publicUrl}
+function imagePicker(choose){fcModal(`<h2>Escolha a origem da imagem</h2><label>Câmera<input id="fc-camera" type="file" accept="image/*" capture="environment"></label><label>Galeria<input id="fc-gallery" type="file" accept="image/*"></label>`);
+for(const id of ['fc-camera','fc-gallery'])$(id).onchange=e=>{const file=e.target.files?.[0];
+$('fc-dialog').close();
+if(file)choose(file)}}
+async function loadSession(){if(!api)return;
+try{const {data,error}=await api.auth.getSession();
+if(error)throw error;
+app.user=data.session?.user||null;
+await loadProfile();
+if(uid())window.fcOpenApp();
+else window.fcRender?.()}catch(e){fail(e)}}
+async function loadProfile(){app.profile=null;
+if(!uid()||!api)return;
+const {data,error}=await api.from('profiles').select('*').eq('id',uid()).maybeSingle();
+if(error)throw error;
+app.profile=data}
+window.fcSignIn=async(email,password)=>{try{if(!api)throw Error('O Supabase precisa ser configurado antes de entrar.');
+const {data,error}=await api.auth.signInWithPassword({email:email.trim(),password});
+if(error)throw error;
+app.user=data.user;
+await loadProfile();
+window.fcOpenApp();
+await refresh()}catch(e){fail(e)}};
+window.fcRegister = () => {
+  fcModal(`
+  <h2>Criar conta</h2><form id="fc-register"><label>Nome<input name="name" required minlength="2"></label><label>E-mail<input name="email" type="email" required></label><label>Senha<input name="password" type="password" required minlength="6"></label><button type="submit">Cadastrar</button></form>`);
+$('fc-register').onsubmit=async e=>{e.preventDefault();
+try{if(!api)throw Error('Configure Supabase Auth para cadastrar contas.');
+const f=e.currentTarget;
+const name=f.elements.name.value.trim();
+const {data,error}=await api.auth.signUp({email:f.elements.email.value.trim(),password:f.elements.password.value,options:{data:{name}}});
+if(error)throw error;
+$('fc-dialog').close();
+window.fcHint?.(data.session?'Conta criada.':'Confira seu e-mail para confirmar a conta.');
+if(data.session){app.user=data.user;
+await loadProfile();
+await refresh()}}catch(err){fail(err)}}};
+window.fcRecover=()=>{fcModal(`<h2>Recuperar senha</h2><form id="fc-recover"><input name="email" type="email" required placeholder="Seu e-mail"><button type="submit">Enviar recuperação</button></form>`);
+$('fc-recover').onsubmit=async e=>{e.preventDefault();
+try{if(!api)throw Error('Configure Supabase Auth.');
+const {error}=await api.auth.resetPasswordForEmail(e.currentTarget.elements.email.value,{redirectTo:location.origin+location.pathname});
+if(error)throw error;
+$('fc-dialog').close();
+window.fcHint?.('Confira o e-mail enviado para recuperação.')}catch(err){fail(err)}}};
+async function signOut(){try{if(api){const {error}=await api.auth.signOut();
+if(error)throw error}app.user=null;
+app.profile=null;
+window.fcShowLogin();
+window.fcRender?.()}catch(e){fail(e)}}
+async function refresh(){if(!api){window.fcRender?.();
+return}try{const [stands,posts,stories]=await Promise.all([query('stands',{order:'created_at'}),query('posts',{order:'created_at',asc:false,limit:100}),query('women_stories',{eq:{published:true},order:'created_at',asc:false})]);
+app.stands=stands;
+app.posts=posts;
+app.stories=stories;
+if(uid()){app.notifications=await query('notifications',{eq:{recipient_id:uid()},order:'created_at',asc:false,limit:80})}const [{data:setting,error:settingError}]=await Promise.all([api.from('fair_settings').select('*').eq('id',1).maybeSingle()]);
+if(settingError)throw settingError;
+app.closed=!!setting?.closed;
+window.fcRender?.()}catch(e){fail(e)}}
+function setPage(page){app.page=page;
+window.fcRender?.();
+$('fc-main')?.focus();
+window.scrollTo(0,0)}window.fcPage=setPage;
+function nav(){const pages=[['inicio','Início'],['mural','Mural'],['estandes','Estandes'],['ranking','Ranking'],['destaques','Destaques'],['mulheres','Mulheres na tecnologia']];
+if(uid()&&!isResponsible())pages.push(['chat','Chat']);
+if(isResponsible())pages.push(['meu-estande','Meu estande']);
+if(isAdmin())pages.push(['admin','Admin']);
+$('fc-nav').innerHTML=pages.map(([id,label])=>`<button type="button" class="fc-alt" data-page="${id}">${label}</button>`).join('');
+$('fc-nav').querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+$('fc-profile').textContent=app.profile?.name||'Entrar / perfil';
+$('fc-bell-count').textContent=app.notifications.filter(n=>!n.read_at).length||''}
+window.fcRender=()=>{nav();
+const views={inicio:window.fcHome,mural:window.fcWall,estandes:window.fcStands,ranking:window.fcRanking,destaques:window.fcHighlights,mulheres:window.fcWomen,perfil:window.fcProfile,notificacoes:window.fcNotices,chat:window.fcChats,'meu-estande':window.fcMyStand,admin:window.fcAdmin,resultado:window.fcResult};
+$('fc-main').innerHTML=views[app.page]?.()||'<div class="fc-card"><h1>Feira Connect</h1><p>Continue juntando as partes na ordem: as próximas incluem as telas e ações desta seção.</p></div>';
+window.fcBindPage?.()};
 window.fcCore={app,api,html,uid,isAdmin,isResponsible,mustLogin,fcModal,fail,query,insert,update,invoke,upload,imagePicker,refresh,setPage,signOut};
-if(api){api.auth.onAuthStateChange((_event,session)=>{app.user=session?.user||null;setTimeout(async()=>{try{await loadProfile();await refresh()}catch(e){fail(e)}},0)});loadSession().then(refresh)}else window.fcRender();
+if(api){api.auth.onAuthStateChange((_event,session)=>{app.user=session?.user||null;
+setTimeout(async()=>{try{await loadProfile();
+await refresh()}catch(e){fail(e)}},0)});
+loadSession().then(refresh)}else window.fcRender();
 /* PARTE 5: mural, fotos, curtidas, comentários e destaques. Continua dentro do script/IIFE da Parte 4. */
 const core=window.fcCore;
 const safe=core.html;
 function person(id){return app.profiles?.find(p=>p.id===id)?.name||'Participante'}
 function standName(id){return app.stands.find(s=>s.id===id)?.name||''}
-function photoCard(p,large=false){const n=Number(p.likes_count||0),comments=Number(p.comments_count||0),s=app.stands.find(x=>x.id===p.stand_id);return `<article class="fc-card fc-post" data-post="${safe(p.id)}">${p.image_url?`<img class="fc-photo" src="${safe(p.image_url)}" alt="Foto publicada na feira" loading="lazy" data-expand="${safe(p.id)}">`:''}<div class="fc-row"><span class="fc-muted">${safe(p.author_name||person(p.author_id))}</span>${s?`<span class="fc-tag">${safe(s.name)}</span>`:''}</div><p>${safe(p.caption||'')}</p><div class="fc-row"><button type="button" data-like="${safe(p.id)}">💗 ${n}</button><button type="button" class="fc-alt" data-comments="${safe(p.id)}">💬 ${comments}</button><button type="button" class="fc-alt" data-report-post="${safe(p.id)}" aria-label="Opções e denúncia da foto">⋯</button></div>${large&&s?`<p class="fc-muted">Personagem do estande: ${safe(s.character_name||'a escolher')}</p>`:''}</article>`}
+function photoCard(p,large=false){const n=Number(p.likes_count||0),comments=Number(p.comments_count||0),s=app.stands.find(x=>x.id===p.stand_id);
+return `<article class="fc-card fc-post" data-post="${safe(p.id)}">${p.image_url?`<img class="fc-photo" src="${safe(p.image_url)}" alt="Foto publicada na feira" loading="lazy" data-expand="${safe(p.id)}">`:''}<div class="fc-row"><span class="fc-muted">${safe(p.author_name||person(p.author_id))}</span>${s?`<span class="fc-tag">${safe(s.name)}</span>`:''}</div><p>${safe(p.caption||'')}</p><div class="fc-row"><button type="button" data-like="${safe(p.id)}">💗 ${n}</button><button type="button" class="fc-alt" data-comments="${safe(p.id)}">💬 ${comments}</button><button type="button" class="fc-alt" data-report-post="${safe(p.id)}" aria-label="Opções e denúncia da foto">⋯</button></div>${large&&s?`<p class="fc-muted">Personagem do estande: ${safe(s.character_name||'a escolher')}</p>`:''}</article>`}
 let postFilter='novas',postStand='';
-window.fcHome=()=>{const visible=app.posts.filter(p=>!p.hidden_at);const lead=[...visible].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0))[0];return `<section class="fc-card fc-hero"><h1>E aí, já chegou na feira?</h1><p>Conheça o mural, os estandes e os destaques da feira.</p><p id="fc-visitor-count" class="fc-tag">Visitantes acumulados: carregando...</p></section><div class="fc-grid"><section><h2>Chegaram agora</h2>${visible.slice(0,3).map(p=>photoCard(p)).join('')||'<p>As primeiras fotos ainda vão chegar.</p>'}<button type="button" data-go="mural">Ver mural</button></section><section><h2>Olha quem tá se achando no topo</h2>${lead?photoCard(lead,true):'<p>Nenhuma foto ainda.</p>'}<h2>Mulheres na tecnologia</h2>${(app.stories||[]).slice(0,2).map(x=>`<div class="fc-card">${x.image_url?`<img class="fc-photo" src="${safe(x.image_url)}" alt="Retrato de ${safe(x.title)}">`:''}<h3>${safe(x.title)}</h3><p>${safe(x.summary||x.body||'')}</p></div>`).join('')||'<p>Histórias em preparação.</p>'}</section></div>`};
-window.fcWall=()=>{let rows=app.posts.filter(p=>!p.hidden_at);if(postStand)rows=rows.filter(p=>p.stand_id===postStand);rows=[...rows].sort(postFilter==='bombando'?(a,b)=>(b.likes_count||0)-(a.likes_count||0):(a,b)=>new Date(b.created_at)-new Date(a.created_at));return `<h1>Mural da feira</h1><div class="fc-row"><button data-filter="novas">Chegaram agora</button><button data-filter="bombando">Bombando</button><label>Filtrar por estande<select id="fc-stand-filter"><option value="">Todos</option>${app.stands.map(s=>`<option value="${safe(s.id)}" ${postStand===s.id?'selected':''}>${safe(s.name)}</option>`).join('')}</select></label><button data-new-post>+ Publicar foto</button></div>${rows.map(p=>photoCard(p)).join('')||'<p>Não há publicações neste filtro.</p>'}`};
+window.fcHome=()=>{const visible=app.posts.filter(p=>!p.hidden_at);
+const lead=[...visible].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0))[0];
+return `<section class="fc-card fc-hero"><h1>E aí, já chegou na feira?</h1><p>Conheça o mural, os estandes e os destaques da feira.</p><p id="fc-visitor-count" class="fc-tag">Visitantes acumulados: carregando...</p></section><div class="fc-grid"><section><h2>Chegaram agora</h2>${visible.slice(0,3).map(p=>photoCard(p)).join('')||'<p>As primeiras fotos ainda vão chegar.</p>'}<button type="button" data-go="mural">Ver mural</button></section><section><h2>Olha quem tá se achando no topo</h2>${lead?photoCard(lead,true):'<p>Nenhuma foto ainda.</p>'}<h2>Mulheres na tecnologia</h2>${(app.stories||[]).slice(0,2).map(x=>`<div class="fc-card">${x.image_url?`<img class="fc-photo" src="${safe(x.image_url)}" alt="Retrato de ${safe(x.title)}">`:''}<h3>${safe(x.title)}</h3><p>${safe(x.summary||x.body||'')}</p></div>`).join('')||'<p>Histórias em preparação.</p>'}</section></div>`};
+window.fcWall=()=>{let rows=app.posts.filter(p=>!p.hidden_at);
+if(postStand)rows=rows.filter(p=>p.stand_id===postStand);
+rows=[...rows].sort(postFilter==='bombando'?(a,b)=>(b.likes_count||0)-(a.likes_count||0):(a,b)=>new Date(b.created_at)-new Date(a.created_at));
+return `<h1>Mural da feira</h1><div class="fc-row"><button data-filter="novas">Chegaram agora</button><button data-filter="bombando">Bombando</button><label>Filtrar por estande<select id="fc-stand-filter"><option value="">Todos</option>${app.stands.map(s=>`<option value="${safe(s.id)}" ${postStand===s.id?'selected':''}>${safe(s.name)}</option>`).join('')}</select></label><button data-new-post>+ Publicar foto</button></div>${rows.map(p=>photoCard(p)).join('')||'<p>Não há publicações neste filtro.</p>'}`};
 window.fcHighlights=()=>`<h1>Destaques das fotos</h1><p>As fotos são classificadas por curtidas; isso não altera os votos dos estandes.</p>${[...app.posts].filter(p=>!p.hidden_at).sort((a,b)=>(b.likes_count||0)-(a.likes_count||0)).map((p,i)=>`<h2>${i+1}º · ${Number(p.likes_count||0)} curtidas</h2>${photoCard(p,i===0)}`).join('')||'<p>Nenhuma foto elegível.</p>'}`;
-async function loadPostCounts(){if(!api||!app.posts.length)return;try{const [likes,comments]=await Promise.all([query('post_likes',{columns:'post_id'}),query('comments',{columns:'post_id,hidden_at'})]);const lc={},cc={};likes.forEach(x=>lc[x.post_id]=(lc[x.post_id]||0)+1);comments.filter(x=>!x.hidden_at).forEach(x=>cc[x.post_id]=(cc[x.post_id]||0)+1);app.posts.forEach(p=>{p.likes_count=lc[p.id]||0;p.comments_count=cc[p.id]||0});window.fcRender()}catch(e){console.warn('Contagens indisponíveis:',e)}}
-function newPost(){if(!mustLogin())return;const own=app.stands.find(s=>s.owner_id===uid());let chosen=null;fcModal(`<h2>Publicar foto</h2><p>Escolha câmera ou galeria. Foto de perfil e capa têm seletores separados em suas telas.</p><button type="button" id="fc-select-post">📷 Câmera ou 🖼️ Galeria</button><p id="fc-selected-post" class="fc-muted">Nenhuma foto escolhida.</p><form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000"></textarea></label><label>Estande associado<select name="stand"><option value="">Sem estande</option>${app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('')}</select></label><button type="submit">Publicar foto</button></form>`);$('fc-select-post').onclick=()=>imagePicker(file=>{chosen=file;newPostWithFile(file,own)});$('fc-post-form').onsubmit=e=>{e.preventDefault();savePost(e.currentTarget,chosen)}}
-function newPostWithFile(file){fcModal(`<h2>Publicar foto</h2><p class="fc-muted">Selecionada: ${safe(file.name)}</p><form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000"></textarea></label><label>Estande associado<select name="stand"><option value="">Sem estande</option>${app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('')}</select></label><button type="submit">Publicar foto</button></form>`);$('fc-post-form').onsubmit=e=>{e.preventDefault();savePost(e.currentTarget,file)}}
-async function savePost(form,file){try{if(!mustLogin())return;if(!file)throw Error('Escolha uma foto.');const stand_id=form.elements.namedItem('stand').value||null;if(isResponsible()&&app.stands.find(s=>s.id===stand_id)?.owner_id!==uid())throw Error('Publique pelo seu estande autorizado.');const caption=form.elements.namedItem('caption').value.trim();if(!caption)throw Error('Escreva uma legenda.');const image_url=await upload('posts',file);await insert('posts',{author_id:uid(),stand_id,caption,image_url});$('fc-dialog').close();await refresh()}catch(e){fail(e)}}
-async function toggleLike(postId){if(!mustLogin())return;try{await invoke('toggle_post_like',{p_post_id:postId});await refresh();await loadPostCounts()}catch(e){fail(e)}}
-async function showComments(postId){try{const comments=await query('comments',{eq:{post_id:postId},order:'created_at'});const visible=comments.filter(x=>!x.hidden_at);fcModal(`<h2>Comentários</h2>${visible.map(x=>`<div class="fc-card"><strong>${safe(x.author_name||person(x.author_id))}</strong><p>${safe(x.body)}</p><button class="fc-alt" type="button" data-report-comment="${safe(x.id)}">⋯ Denunciar este comentário</button></div>`).join('')||'<p>Sem comentários.</p>'}<form id="fc-comment-form"><textarea name="body" required maxlength="1200" placeholder="Seu comentário"></textarea><button type="submit">Comentar</button></form>`);$('fc-comment-form').onsubmit=async e=>{e.preventDefault();if(!mustLogin())return;try{const body=e.currentTarget.elements.namedItem('body').value.trim();if(!body)throw Error('Escreva um comentário.');await insert('comments',{post_id:postId,author_id:uid(),body});await refresh();await showComments(postId)}catch(err){fail(err)}};$('fc-dialog').querySelectorAll('[data-report-comment]').forEach(b=>b.onclick=()=>reportContent('comentario',b.dataset.reportComment))}catch(e){fail(e)}}
-async function expandPhoto(id){const p=app.posts.find(x=>x.id===id);if(!p)return;fcModal(`<h2>Foto da feira</h2><img class="fc-photo" src="${safe(p.image_url)}" alt="Foto ampliada"><p>${safe(p.caption||'')}</p><button type="button" id="fc-open-comments">Ver comentários</button>`);$('fc-open-comments').onclick=()=>showComments(id)}
-async function reportContent(kind,id){if(!mustLogin())return;fcModal(`<h2>Denunciar ${safe(kind)}</h2><p>O conteúdo denunciado fica oculto durante a análise, conforme regras do servidor.</p><form id="fc-report-form"><textarea name="reason" required maxlength="1500" placeholder="Explique o motivo"></textarea><button class="fc-danger" type="submit">Enviar denúncia</button></form>`);$('fc-report-form').onsubmit=async e=>{e.preventDefault();try{await invoke('submit_report',{p_kind:kind,p_target_id:id,p_reason:e.currentTarget.elements.namedItem('reason').value.trim()});$('fc-dialog').close();await refresh()}catch(err){fail(err)}}}
-function bindPhotos(){document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setPage(b.dataset.go));document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{postFilter=b.dataset.filter;window.fcRender()});const f=$('fc-stand-filter');if(f)f.onchange=()=>{postStand=f.value;window.fcRender()};document.querySelectorAll('[data-new-post]').forEach(b=>b.onclick=newPost);document.querySelectorAll('[data-like]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.like));document.querySelectorAll('[data-comments]').forEach(b=>b.onclick=()=>showComments(b.dataset.comments));document.querySelectorAll('[data-expand]').forEach(b=>b.onclick=()=>expandPhoto(b.dataset.expand));document.querySelectorAll('[data-report-post]').forEach(b=>b.onclick=()=>reportContent('foto',b.dataset.reportPost))}
+async function loadPostCounts(){if(!api||!app.posts.length)return;
+try{const [likes,comments]=await Promise.all([query('post_likes',{columns:'post_id'}),query('comments',{columns:'post_id,hidden_at'})]);
+const lc={},cc={};
+likes.forEach(x=>lc[x.post_id]=(lc[x.post_id]||0)+1);
+comments.filter(x=>!x.hidden_at).forEach(x=>cc[x.post_id]=(cc[x.post_id]||0)+1);
+app.posts.forEach(p=>{p.likes_count=lc[p.id]||0;
+p.comments_count=cc[p.id]||0});
+window.fcRender()}catch(e){console.warn('Contagens indisponíveis:',e)}}
+function newPost(){if(!mustLogin())return;
+const own=app.stands.find(s=>s.owner_id===uid());
+let chosen=null;
+fcModal(`<h2>Publicar foto</h2><p>Escolha câmera ou galeria. Foto de perfil e capa têm seletores separados em suas telas.</p><button type="button" id="fc-select-post">📷 Câmera ou 🖼️ Galeria</button><p id="fc-selected-post" class="fc-muted">Nenhuma foto escolhida.</p><form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000"></textarea></label><label>Estande associado<select name="stand"><option value="">Sem estande</option>${app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('')}</select></label><button type="submit">Publicar foto</button></form>`);
+$('fc-select-post').onclick=()=>imagePicker(file=>{chosen=file;
+newPostWithFile(file,own)});
+$('fc-post-form').onsubmit=e=>{e.preventDefault();
+savePost(e.currentTarget,chosen)}}
+function newPostWithFile(file){fcModal(`<h2>Publicar foto</h2><p class="fc-muted">Selecionada: ${safe(file.name)}</p><form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000"></textarea></label><label>Estande associado<select name="stand"><option value="">Sem estande</option>${app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('')}</select></label><button type="submit">Publicar foto</button></form>`);
+$('fc-post-form').onsubmit=e=>{e.preventDefault();
+savePost(e.currentTarget,file)}}
+async function savePost(form,file){try{if(!mustLogin())return;
+if(!file)throw Error('Escolha uma foto.');
+const stand_id=form.elements.namedItem('stand').value||null;
+if(isResponsible()&&app.stands.find(s=>s.id===stand_id)?.owner_id!==uid())throw Error('Publique pelo seu estande autorizado.');
+const caption=form.elements.namedItem('caption').value.trim();
+if(!caption)throw Error('Escreva uma legenda.');
+const image_url=await upload('posts',file);
+await insert('posts',{author_id:uid(),stand_id,caption,image_url});
+$('fc-dialog').close();
+await refresh()}catch(e){fail(e)}}
+async function toggleLike(postId){if(!mustLogin())return;
+try{await invoke('toggle_post_like',{p_post_id:postId});
+await refresh();
+await loadPostCounts()}catch(e){fail(e)}}
+async function showComments(postId){try{const comments=await query('comments',{eq:{post_id:postId},order:'created_at'});
+const visible=comments.filter(x=>!x.hidden_at);
+fcModal(`<h2>Comentários</h2>${visible.map(x=>`<div class="fc-card"><strong>${safe(x.author_name||person(x.author_id))}</strong><p>${safe(x.body)}</p><button class="fc-alt" type="button" data-report-comment="${safe(x.id)}">⋯ Denunciar este comentário</button></div>`).join('')||'<p>Sem comentários.</p>'}<form id="fc-comment-form"><textarea name="body" required maxlength="1200" placeholder="Seu comentário"></textarea><button type="submit">Comentar</button></form>`);
+$('fc-comment-form').onsubmit=async e=>{e.preventDefault();
+if(!mustLogin())return;
+try{const body=e.currentTarget.elements.namedItem('body').value.trim();
+if(!body)throw Error('Escreva um comentário.');
+await insert('comments',{post_id:postId,author_id:uid(),body});
+await refresh();
+await showComments(postId)}catch(err){fail(err)}};
+$('fc-dialog').querySelectorAll('[data-report-comment]').forEach(b=>b.onclick=()=>reportContent('comentario',b.dataset.reportComment))}catch(e){fail(e)}}
+async function expandPhoto(id){const p=app.posts.find(x=>x.id===id);
+if(!p)return;
+fcModal(`<h2>Foto da feira</h2><img class="fc-photo" src="${safe(p.image_url)}" alt="Foto ampliada"><p>${safe(p.caption||'')}</p><button type="button" id="fc-open-comments">Ver comentários</button>`);
+$('fc-open-comments').onclick=()=>showComments(id)}
+async function reportContent(kind,id){if(!mustLogin())return;
+fcModal(`<h2>Denunciar ${safe(kind)}</h2><p>O conteúdo denunciado fica oculto durante a análise, conforme regras do servidor.</p><form id="fc-report-form"><textarea name="reason" required maxlength="1500" placeholder="Explique o motivo"></textarea><button class="fc-danger" type="submit">Enviar denúncia</button></form>`);
+$('fc-report-form').onsubmit=async e=>{e.preventDefault();
+try{await invoke('submit_report',{p_kind:kind,p_target_id:id,p_reason:e.currentTarget.elements.namedItem('reason').value.trim()});
+$('fc-dialog').close();
+await refresh()}catch(err){fail(err)}}}
+function bindPhotos(){document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setPage(b.dataset.go));
+document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{postFilter=b.dataset.filter;
+window.fcRender()});
+const f=$('fc-stand-filter');
+if(f)f.onchange=()=>{postStand=f.value;
+window.fcRender()};
+document.querySelectorAll('[data-new-post]').forEach(b=>b.onclick=newPost);
+document.querySelectorAll('[data-like]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.like));
+document.querySelectorAll('[data-comments]').forEach(b=>b.onclick=()=>showComments(b.dataset.comments));
+document.querySelectorAll('[data-expand]').forEach(b=>b.onclick=()=>expandPhoto(b.dataset.expand));
+document.querySelectorAll('[data-report-post]').forEach(b=>b.onclick=()=>reportContent('foto',b.dataset.reportPost))}
 /* PARTE 7: perfil, notificações, histórias e conversas. Continua o script da Parte 6. */
 window.fcProfile=()=>{if(!uid())return `<h1>Seu perfil</h1><p>Você está visitando a feira sem entrar.</p><button id="fc-profile-login" type="button">Entrar</button><button id="fc-profile-register" type="button">Criar conta</button>`;
 const p=app.profile||{};
