@@ -1235,14 +1235,89 @@ window.fcMyStand = () => {
     return `
       <div class="fc-card">
         <h1>Meu estande 🎪</h1>
-        <p>Esta área é para contas autorizadas como responsáveis
-           por estande.</p>
+        <p>Esta área é para contas autorizadas como responsáveis por estande.</p>
       </div>
     `;
   }
 
   const ownStand = app.stands.find(
     stand => stand.owner_id === uid()
+  );
+
+  const mascots = [
+    { id: 1, skin: '#ad704e', hair: '#352421', shirt: '#ff598b', hairStyle: 0, accessory: 0 },
+    { id: 2, skin: '#e3ac79', hair: '#261b28', shirt: '#37a7ed', hairStyle: 1, accessory: 1 },
+    { id: 3, skin: '#765038', hair: '#1d1720', shirt: '#ffb12e', hairStyle: 2, accessory: 0 },
+    { id: 4, skin: '#f1c399', hair: '#8c472a', shirt: '#9c70de', hairStyle: 3, accessory: 2 },
+    { id: 5, skin: '#b98265', hair: '#21191b', shirt: '#47bc91', hairStyle: 4, accessory: 0 },
+    { id: 6, skin: '#694633', hair: '#38251c', shirt: '#fa7465', hairStyle: 0, accessory: 1 },
+    { id: 7, skin: '#d69a73', hair: '#c57b32', shirt: '#597ad7', hairStyle: 2, accessory: 2 },
+    { id: 8, skin: '#96664f', hair: '#1c1a23', shirt: '#f08ac4', hairStyle: 1, accessory: 0 },
+    { id: 9, skin: '#f0bb90', hair: '#623b2c', shirt: '#28aaa5', hairStyle: 3, accessory: 1 },
+    { id: 10, skin: '#805844', hair: '#262126', shirt: '#e39837', hairStyle: 4, accessory: 2 }
+  ];
+
+  function mascotPreview(m) {
+    const hairstyles = [
+      `<circle cx="52" cy="29" r="17" fill="${m.hair}"/>
+       <circle cx="36" cy="35" r="9" fill="${m.hair}"/>
+       <circle cx="68" cy="35" r="9" fill="${m.hair}"/>`,
+      `<path d="M32 48 Q28 13 52 14 Q77 13 72 48
+                 L77 76 L66 76 L65 43 L39 43 L38 76 L27 76 Z"
+             fill="${m.hair}"/>`,
+      `<path d="M34 42 Q31 18 51 18 Q70 16 71 42
+                 Q61 34 53 33 Q43 37 34 42 Z"
+             fill="${m.hair}"/>`,
+      `<path d="M35 39 Q40 16 67 24 L72 42
+                 Q61 34 53 29 Q44 39 35 39 Z"
+             fill="${m.hair}"/>`,
+      `<path d="M38 31 Q52 21 66 31"
+             fill="none" stroke="${m.hair}" stroke-width="4"/>`
+    ];
+
+    const accessory = [
+      '',
+      `<circle cx="43" cy="48" r="7" fill="none" stroke="#26334e" stroke-width="2"/>
+       <circle cx="61" cy="48" r="7" fill="none" stroke="#26334e" stroke-width="2"/>
+       <path d="M50 48 H54" stroke="#26334e" stroke-width="2"/>`,
+      `<path d="M33 48 Q31 22 52 22 Q73 22 71 48"
+             fill="none" stroke="#26334e" stroke-width="4"/>
+       <rect x="28" y="43" width="8" height="17" rx="4" fill="#26334e"/>
+       <rect x="68" y="43" width="8" height="17" rx="4" fill="#26334e"/>`
+    ];
+
+    return `
+      <svg viewBox="0 0 104 170" width="88" height="144"
+           role="img" aria-label="Prévia do mascote ${m.id}"
+           xmlns="http://www.w3.org/2000/svg">
+        <path d="M43 113 L41 151 M61 113 L63 151"
+              stroke="#34415e" stroke-width="15" stroke-linecap="round"/>
+        <path d="M39 151 H29 M65 151 H75"
+              stroke="#26334e" stroke-width="9" stroke-linecap="round"/>
+        <path d="M35 83 L22 110 M69 83 L82 110"
+              stroke="${m.skin}" stroke-width="11" stroke-linecap="round"/>
+        <path d="M37 77 Q52 70 67 77 L72 119 H32 Z"
+              fill="${m.shirt}"/>
+        <rect x="47" y="65" width="10" height="13" rx="4"
+              fill="${m.skin}"/>
+        ${hairstyles[m.hairStyle]}
+        <ellipse cx="52" cy="47" rx="17" ry="22" fill="${m.skin}"/>
+        ${m.hairStyle !== 4 ? hairstyles[m.hairStyle] : ''}
+        <circle cx="46" cy="47" r="1.6" fill="#29212a"/>
+        <circle cx="59" cy="47" r="1.6" fill="#29212a"/>
+        <path d="M47 57 Q52 61 57 57"
+              fill="none" stroke="#8d464a" stroke-width="2"
+              stroke-linecap="round"/>
+        ${accessory[m.accessory]}
+      </svg>
+    `;
+  }
+
+  const occupied = new Set(
+    app.stands
+      .filter(stand => stand.id !== ownStand?.id)
+      .map(stand => Number(stand.mascot_id))
+      .filter(Boolean)
   );
 
   queueMicrotask(() => {
@@ -1254,20 +1329,43 @@ window.fcMyStand = () => {
     form.onsubmit = async event => {
       event.preventDefault();
 
-      const button =
-        document.getElementById('fc-my-stand-save');
-      const message =
-        document.getElementById('fc-my-stand-message');
+      const button = document.getElementById('fc-my-stand-save');
+      const message = document.getElementById('fc-my-stand-message');
 
-      const name =
-        form.elements.namedItem('name').value.trim();
+      const name = form.elements.namedItem('name').value.trim();
       const description =
         form.elements.namedItem('description').value.trim();
       const character_name =
         form.elements.namedItem('character_name').value.trim();
 
+      const selectedMascot =
+        form.querySelector('input[name="mascot_id"]:checked');
+
+      const mascot_id = ownStand?.mascot_id
+        ? Number(ownStand.mascot_id)
+        : Number(selectedMascot?.value);
+
+      const mascot_gender = ownStand?.mascot_gender ||
+        form.elements.namedItem('mascot_gender').value;
+
       if (!name) {
         message.textContent = 'Escreve o nome do estande.';
+        return;
+      }
+
+      if (!Number.isInteger(mascot_id) ||
+          mascot_id < 1 || mascot_id > 10) {
+        message.textContent = 'Escolhe um mascote disponível.';
+        return;
+      }
+
+      if (!['menina', 'menino'].includes(mascot_gender)) {
+        message.textContent = 'Escolhe menina ou menino.';
+        return;
+      }
+
+      if (!character_name) {
+        message.textContent = 'Dá um nome ao teu mascote.';
         return;
       }
 
@@ -1279,7 +1377,9 @@ window.fcMyStand = () => {
         const values = {
           name,
           description: description || null,
-          character_name: character_name || null
+          mascot_id,
+          mascot_gender,
+          character_name
         };
 
         if (ownStand) {
@@ -1295,12 +1395,19 @@ window.fcMyStand = () => {
         window.fcHint?.(
           ownStand
             ? 'Estande atualizado! 🎪'
-            : 'Estande cadastrado! Bora mostrar pra galera 🎪'
+            : 'Estande cadastrado! Teu mascote agora é exclusivo 🎪'
         );
       } catch (error) {
         console.error(error);
-        message.textContent =
-          error?.message || 'Não consegui salvar o estande.';
+
+        if (error?.code === '23505') {
+          message.textContent =
+            'Esse mascote acabou de ser escolhido por outro estande. ' +
+            'Atualiza a página e escolhe outro.';
+        } else {
+          message.textContent =
+            error?.message || 'Não consegui salvar o estande.';
+        }
       } finally {
         if (button.isConnected) {
           button.disabled = false;
@@ -1323,30 +1430,71 @@ window.fcMyStand = () => {
         <form id="fc-my-stand-form">
           <label>
             Nome do estande
-            <input name="name"
-                   required maxlength="120"
+            <input name="name" required maxlength="120"
                    value="${html(ownStand?.name || '')}"
                    placeholder="Como a galera vai conhecer teu estande?">
           </label>
 
           <label>
             Descrição
-            <textarea name="description"
-                      maxlength="2000"
+            <textarea name="description" maxlength="2000"
                       placeholder="Conta o que vai rolar no teu estande"
             >${html(ownStand?.description || '')}</textarea>
           </label>
 
+          <fieldset>
+            <legend>Escolhe um mascote para o teu estande</legend>
+            <p>São 10 mascotes únicos. Um mascote escolhido e salvo
+               não fica mais disponível para outro estande.</p>
+
+            <div style="display:grid;
+                        grid-template-columns:repeat(auto-fit,minmax(125px,1fr));
+                        gap:12px">
+              ${mascots.map(m => {
+                const taken = occupied.has(m.id);
+                const mine = Number(ownStand?.mascot_id) === m.id;
+
+                return `
+                  <label style="display:grid;justify-items:center;
+                                gap:6px;padding:12px;border:2px solid #d4ddeb;
+                                border-radius:14px;text-align:center;
+                                opacity:${taken ? '.45' : '1'}">
+                    ${mascotPreview(m)}
+                    <span>Mascote ${m.id}${mine ? ' — teu' : ''}</span>
+                    <input type="radio" name="mascot_id"
+                           value="${m.id}"
+                           ${mine ? 'checked' : ''}
+                           ${taken || (ownStand && !mine)
+                             ? 'disabled' : ''}>
+                    ${taken ? '<small>Já escolhido</small>' : ''}
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          </fieldset>
+
           <label>
-            Nome do personagem (opcional)
-            <input name="character_name"
-                   maxlength="120"
-                   value="${html(ownStand?.character_name || '')}"
-                   placeholder="Qual o nome do mascote?">
+            Versão do teu mascote
+            <select name="mascot_gender"
+                    ${ownStand?.mascot_gender ? 'disabled' : ''}>
+              <option value="">Escolhe uma opção</option>
+              <option value="menina"
+                ${ownStand?.mascot_gender === 'menina'
+                  ? 'selected' : ''}>Menina</option>
+              <option value="menino"
+                ${ownStand?.mascot_gender === 'menino'
+                  ? 'selected' : ''}>Menino</option>
+            </select>
           </label>
 
-          <p id="fc-my-stand-message"
-             role="alert"
+          <label>
+            Nome do mascote
+            <input name="character_name" required maxlength="120"
+                   value="${html(ownStand?.character_name || '')}"
+                   placeholder="Que nome vocês vão dar a ele?">
+          </label>
+
+          <p id="fc-my-stand-message" role="alert"
              style="color:#a51c48"></p>
 
           <button id="fc-my-stand-save" type="submit">
@@ -1357,7 +1505,6 @@ window.fcMyStand = () => {
     </div>
   `;
 };
-
 window.fcStands = () => `
   <h1>Estandes da feira 🎪</h1>
   <p>Conhece a galera antes de dar teu voto!</p>
