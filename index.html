@@ -430,14 +430,38 @@ comments.filter(x=>!x.hidden_at).forEach(x=>cc[x.post_id]=(cc[x.post_id]||0)+1);
 app.posts.forEach(p=>{p.likes_count=lc[p.id]||0;
 p.comments_count=cc[p.id]||0});
 window.fcRender()}catch(e){console.warn('Contagens indisponíveis:',e)}}
-function newPost(){if(!mustLogin())return;
-const own=app.stands.find(s=>s.owner_id===uid());
-let chosen=null;
-fcModal(`<h2>Publicar foto</h2><p>Escolha câmera ou galeria. Foto de perfil e capa têm seletores separados em suas telas.</p><button type="button" id="fc-select-post">📷 Câmera ou 🖼️ Galeria</button><p id="fc-selected-post" class="fc-muted">Nenhuma foto escolhida.</p><form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000"></textarea></label><label>Estande associado<select name="stand"><option value="">Sem estande</option>${app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('')}</select></label><button type="submit">Publicar foto</button></form>`);
-$('fc-select-post').onclick=()=>imagePicker(file=>{chosen=file;
-newPostWithFile(file,own)});
-$('fc-post-form').onsubmit=e=>{e.preventDefault();
-savePost(e.currentTarget,chosen)}}
+function newPost(){
+  if(!mustLogin())return;
+  let chosen=null;
+  const options=app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('');
+  fcModal(`<h2>Publicar foto 📸</h2><p>Vai de foto nova ou escolhe uma da galeria?</p>
+    <div class="fc-row"><button type="button" id="fc-open-camera">📷 Abrir câmera</button><button type="button" class="fc-alt" id="fc-open-gallery">🖼️ Escolher da galeria</button></div>
+    <input id="fc-post-camera-input" type="file" accept="image/*" capture="environment" hidden aria-label="Câmera">
+    <input id="fc-post-gallery-input" type="file" accept="image/*" hidden aria-label="Galeria">
+    <p id="fc-selected-post" class="fc-muted" role="status">Nenhuma foto escolhida.</p>
+    <img id="fc-post-preview" alt="Prévia da foto escolhida" style="display:none;width:100%;max-height:240px;object-fit:contain;border-radius:12px">
+    <form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000" placeholder="Conta pra galera o que tá rolando"></textarea></label>
+    <label>Estande associado (opcional)<select name="stand"><option value="">Sem estande</option>${options}</select></label>
+    <button type="submit">Publicar foto</button></form>`);
+  const camera=$('fc-post-camera-input');
+  const gallery=$('fc-post-gallery-input');
+  $('fc-open-camera').onclick=()=>camera.click();
+  $('fc-open-gallery').onclick=()=>gallery.click();
+  let previewUrl=null;
+  const selected=e=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    if(!file.type.startsWith('image/')){fail(Error('Escolha uma imagem válida.'));return}
+    chosen=file;
+    $('fc-selected-post').textContent=`Selecionada: ${file.name}`;
+    if(previewUrl)URL.revokeObjectURL(previewUrl);
+    previewUrl=URL.createObjectURL(file);
+    const preview=$('fc-post-preview');preview.src=previewUrl;preview.style.display='block';
+  };
+  camera.onchange=selected;
+  gallery.onchange=selected;
+  $('fc-post-form').onsubmit=e=>{e.preventDefault();savePost(e.currentTarget,chosen)};
+}
 function newPostWithFile(file){fcModal(`<h2>Publicar foto</h2><p class="fc-muted">Selecionada: ${safe(file.name)}</p><form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000"></textarea></label><label>Estande associado<select name="stand"><option value="">Sem estande</option>${app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('')}</select></label><button type="submit">Publicar foto</button></form>`);
 $('fc-post-form').onsubmit=e=>{e.preventDefault();
 savePost(e.currentTarget,file)}}
