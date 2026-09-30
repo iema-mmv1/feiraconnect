@@ -1401,10 +1401,18 @@ genderSelect.onchange = () => {
       button.textContent = 'Salvando...';
       message.textContent = '';
 
-      try {
+           try {
+        const coverFile =
+          form.elements.namedItem('cover_file').files?.[0];
+
+        const image_url = coverFile
+          ? await upload('posts', coverFile)
+          : (ownStand?.image_url || null);
+
         const values = {
           name,
           description: description || null,
+          image_url,
           mascot_id,
           mascot_gender,
           character_name
@@ -1469,6 +1477,16 @@ genderSelect.onchange = () => {
                       placeholder="Conta o que vai rolar no teu estande"
             >${html(ownStand?.description || '')}</textarea>
           </label>
+<label>
+  Foto de capa do estande
+  <input type="file" name="cover_file" accept="image/*">
+</label>
+${ownStand?.image_url ? `
+  <img src="${html(ownStand.image_url)}"
+       alt="Capa atual do estande"
+       style="display:block;width:100%;max-height:240px;
+              object-fit:cover;border-radius:14px;margin:10px 0 18px">
+` : ''}
 
           <fieldset>
             <legend>Escolhe um mascote para o teu estande</legend>
