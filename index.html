@@ -431,36 +431,71 @@ app.posts.forEach(p=>{p.likes_count=lc[p.id]||0;
 p.comments_count=cc[p.id]||0});
 window.fcRender()}catch(e){console.warn('Contagens indisponíveis:',e)}}
 function newPost(){
-  if(!mustLogin())return;
-  let chosen=null;
-  const options=app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('');
-  fcModal(`<h2>Publicar foto 📸</h2><p>Vai de foto nova ou escolhe uma da galeria?</p>
-    <div class="fc-row"><button type="button" id="fc-open-camera">📷 Abrir câmera</button><button type="button" class="fc-alt" id="fc-open-gallery">🖼️ Escolher da galeria</button></div>
-    <input id="fc-post-camera-input" type="file" accept="image/*" capture="environment" hidden aria-label="Câmera">
-    <input id="fc-post-gallery-input" type="file" accept="image/*" hidden aria-label="Galeria">
-    <p id="fc-selected-post" class="fc-muted" role="status">Nenhuma foto escolhida.</p>
-    <img id="fc-post-preview" alt="Prévia da foto escolhida" style="display:none;width:100%;max-height:240px;object-fit:contain;border-radius:12px">
-    <form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000" placeholder="Conta pra galera o que tá rolando"></textarea></label>
-    <label>Estande associado (opcional)<select name="stand"><option value="">Sem estande</option>${options}</select></label>
-    <button type="submit">Publicar foto</button></form>`);
-  const camera=$('fc-post-camera-input');
-  const gallery=$('fc-post-gallery-input');
-  $('fc-open-camera').onclick=()=>camera.click();
-  $('fc-open-gallery').onclick=()=>gallery.click();
-  let previewUrl=null;
-  const selected=e=>{
-    const file=e.target.files?.[0];
-    if(!file)return;
-    if(!file.type.startsWith('image/')){fail(Error('Escolha uma imagem válida.'));return}
-    chosen=file;
-    $('fc-selected-post').textContent=`Selecionada: ${file.name}`;
-    if(previewUrl)URL.revokeObjectURL(previewUrl);
-    previewUrl=URL.createObjectURL(file);
-    const preview=$('fc-post-preview');preview.src=previewUrl;preview.style.display='block';
-  };
-  camera.onchange=selected;
-  gallery.onchange=selected;
-  $('fc-post-form').onsubmit=e=>{e.preventDefault();savePost(e.currentTarget,chosen)};
+ if(!mustLogin())return;
+ let chosen=null,previewUrl=null,stream=null;
+ const options=app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('');
+ fcModal(`<h2>Publicar foto 📸</h2><p>Vai de foto nova ou escolhe uma da galeria?</p>
+ <div class="fc-row"><button type="button" id="fc-open-camera">📷 Abrir câmera</button><button type="button" class="fc-alt" id="fc-open-gallery">🖼️ Escolher da galeria</button></div>
+ <input id="fc-post-gallery-input" type="file" accept="image/*" hidden aria-label="Galeria">
+ <p id="fc-post-error" role="alert" style="display:none;padding:12px;border-radius:10px;background:#fff0f2;color:#8b1636"></p>
+ <p id="fc-selected-post" class="fc-muted" role="status">Nenhuma foto escolhida.</p>
+ <img id="fc-post-preview" alt="Prévia da foto escolhida" style="display:none;width:100%;max-height:240px;object-fit:contain;border-radius:12px">
+ <form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000" placeholder="Conta pra galera o que tá rolando"></textarea></label>
+ <label>Estande associado (opcional)<select name="stand"><option value="">Sem estande</option>${options}</select></label>
+ <button id="fc-post-submit" type="submit">Publicar foto</button></form>`);
+ const dialog=$('fc-dialog');
+ const showError=message=>{const box=$('fc-post-error');if(box){box.textContent=message;box.style.display='block'}};
+ const stopCamera=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} $('fc-camera-area')?.remove()};
+ dialog.addEventListener('close',stopCamera,{once:true});
+ const selectFile=file=>{
+  if(!file)return;
+  if(!file.type.startsWith('image/')){showError('Escolhe uma imagem válida.');return}
+  if(file.size>6*1024*1024){showError('Essa foto passou de 6 MB. Escolhe uma menor.');return}
+  chosen=file;
+  $('fc-post-error').style.display='none';
+  $('fc-selected-post').textContent=`Selecionada: ${file.name}`;
+  if(previewUrl)URL.revokeObjectURL(previewUrl);
+  previewUrl=URL.createObjectURL(file);
+  const preview=$('fc-post-preview');preview.src=previewUrl;preview.style.display='block';
+ };
+ const gallery=$('fc-post-gallery-input');
+ $('fc-open-gallery').onclick=()=>gallery.click();
+ gallery.onchange=e=>selectFile(e.target.files?.[0]);
+ $('fc-open-camera').onclick=async()=>{
+  if(stream)return;
+  if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia){showError('A câmera precisa do site aberto em HTTPS num navegador compatível. Aqui ela não abriu; usa Galeria ou abre o link publicado em HTTPS.');return}
+  $('fc-post-error').style.display='none';
+  const area=document.createElement('div');area.id='fc-camera-area';
+  area.innerHTML='<p>A câmera vai pedir permissão. Faz tua foto! 📸</p><video autoplay playsinline muted style="width:100%;max-height:330px;background:#101828;border-radius:12px"></video><p class="fc-row"><button type="button" id="fc-take-photo">Tirar foto</button><button type="button" class="fc-alt" id="fc-cancel-photo">Cancelar</button></p>';
+  $('fc-post-form').before(area);
+  $('fc-cancel-photo').onclick=stopCamera;
+  try{
+   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+   const video=area.querySelector('video');video.srcObject=stream;await video.play();
+   $('fc-take-photo').onclick=()=>{
+    if(!video.videoWidth||!video.videoHeight){showError('Espera a câmera carregar.');return}
+    const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+    canvas.getContext('2d').drawImage(video,0,0);
+    canvas.toBlob(blob=>{if(!blob){showError('Não consegui capturar a foto.');return}
+     selectFile(new File([blob],`foto-feira-${Date.now()}.jpg`,{type:'image/jpeg'}));stopCamera();
+    },'image/jpeg',0.85);
+   };
+  }catch(error){stopCamera();showError(error?.name==='NotAllowedError'?'Permissão da câmera negada. Autoriza a câmera no navegador ou escolhe uma foto da galeria.':'Não consegui abrir a câmera neste aparelho. Escolhe uma foto da galeria.');}
+ };
+ $('fc-post-form').onsubmit=async e=>{
+  e.preventDefault();
+  if(!chosen){showError('Escolhe ou tira uma foto antes de publicar.');return}
+  const form=e.currentTarget,submit=$('fc-post-submit');submit.disabled=true;submit.textContent='Publicando...';
+  try{
+   const stand_id=form.elements.namedItem('stand').value||null;
+   if(isResponsible()&&app.stands.find(st=>st.id===stand_id)?.owner_id!==uid())throw Error('Publique pelo seu estande autorizado.');
+   const caption=form.elements.namedItem('caption').value.trim();if(!caption)throw Error('Escreve uma legenda.');
+   const image_url=await upload('posts',chosen);
+   await insert('posts',{author_id:uid(),stand_id,caption,image_url});
+   stopCamera();dialog.close();await refresh();window.fcHint?.('Foto publicada! Dá uma olhada no mural 📸');
+  }catch(error){console.error(error);showError(error?.message||'Não consegui publicar. Tenta de novo.');}
+  finally{if(submit.isConnected){submit.disabled=false;submit.textContent='Publicar foto'}}
+ };
 }
 function newPostWithFile(file){fcModal(`<h2>Publicar foto</h2><p class="fc-muted">Selecionada: ${safe(file.name)}</p><form id="fc-post-form"><label>Legenda<textarea name="caption" required maxlength="1000"></textarea></label><label>Estande associado<select name="stand"><option value="">Sem estande</option>${app.stands.filter(s=>!isResponsible()||s.owner_id===uid()).map(s=>`<option value="${safe(s.id)}">${safe(s.name)}</option>`).join('')}</select></label><button type="submit">Publicar foto</button></form>`);
 $('fc-post-form').onsubmit=e=>{e.preventDefault();
