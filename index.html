@@ -414,7 +414,7 @@ $('fc-nav').querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>setPage(b.d
 $('fc-profile').textContent=app.profile?.name||'Entrar / perfil';
 $('fc-bell-count').textContent=app.notifications.filter(n=>!n.read_at).length||''}
 window.fcRender=()=>{nav();
-const views={inicio:window.fcHome,mural:window.fcWall,estandes:window.fcStands,ranking:window.fcRanking,destaques:window.fcHighlights,mulheres:window.fcWomen,perfil:window.fcProfile,notificacoes:window.fcNotices,chat:window.fcChats,'meu-estande':window.fcMyStand,admin:window.fcAdmin,resultado:window.fcResult};
+const views={inicio:window.fcHome,mural:window.fcWall,cantinho:window.fcCantinho,estandes:window.fcStands,ranking:window.fcRanking,destaques:window.fcHighlights,mulheres:window.fcWomen,perfil:window.fcProfile,notificacoes:window.fcNotices,chat:window.fcChats,'meu-estande':window.fcMyStand,admin:window.fcAdmin,resultado:window.fcResult};
 $('fc-app').classList.toggle('fc-dashboard-mode',app.page==='inicio'); $('fc-main').innerHTML=views[app.page]?.()||'<div class="fc-card"><h1>Feira Connect</h1><p>Continue juntando as partes na ordem: as próximas incluem as telas e ações desta seção.</p></div>';
 window.fcBindPage?.()};
 window.fcCore={app,api,html,uid,isAdmin,isResponsible,mustLogin,fcModal,fail,query,insert,update,invoke,upload,imagePicker,refresh,setPage,signOut};
@@ -425,6 +425,205 @@ loadSession().then(refresh)}else window.fcRender();
 /* PARTE 5: mural, fotos, curtidas, comentários e destaques. Continua dentro do script/IIFE da Parte 4. */
 const core=window.fcCore;
 const safe=core.html;
+window.fcCantinho = () => {
+  if (!uid()) {
+    return `
+      <section class="fc-card">
+        <h1>Meu cantinho na feira</h1>
+        <p>Entra na tua conta para ver tuas fotos e teus votos.</p>
+      </section>
+    `;
+  }
+
+  const name =
+    app.profile?.name ||
+    app.user?.user_metadata?.name ||
+    'Participante';
+
+  const photo = app.profile?.avatar_url
+    ? `<img src="${safe(app.profile.avatar_url)}"
+            alt="Foto de ${safe(name)}"
+            style="width:88px;height:88px;
+                   object-fit:cover;border-radius:50%">`
+        : `<span aria-hidden="true" style="font-size:2.5rem">👤</span>`;
+
+  queueMicrotask(fcLoadCantinhoFotos);
+
+  return `
+    <div style="max-width:980px;margin:24px auto 40px">
+      <section class="fc-card"
+               style="display:flex;align-items:center;
+                      gap:20px;flex-wrap:wrap;padding:22px">
+        <div style="width:88px;height:88px;
+                    display:grid;place-items:center;
+                    border-radius:50%;overflow:hidden;
+                    background:#ffe3ef">
+          ${photo}
+        </div>
+
+        <div>
+          <h1 style="margin:0 0 6px">Meu cantinho na feira ✨</h1>
+          <strong>${safe(name)}</strong>
+          <p style="margin:5px 0 0">
+            Teus momentos e tua participação na feira.
+          </p>
+        </div>
+      </section>
+
+      <section class="fc-card"
+               style="margin-top:16px;padding:20px">
+        <h2 style="margin-top:0">Minhas fotos 📸</h2>
+        <div id="fc-cantinho-fotos">
+          Carregando tuas fotos...
+        </div>
+      </section>
+
+      <section class="fc-card"
+               style="margin-top:16px;padding:20px">
+        <h2 style="margin-top:0">Meus votos nos estandes 🗳️</h2>
+        <div id="fc-cantinho-votos">
+          Carregando teus votos...
+        </div>
+      </section>
+    </div>
+  `;
+};
+async function fcLoadCantinhoFotos() {
+  const box = document.getElementById('fc-cantinho-fotos');
+  if (!box || !uid() || !api || app.page !== 'cantinho') return;
+
+  const accountId = uid();
+
+  try {
+    const posts = [];
+    const batchSize = 200;
+
+    // Busca em lotes para não parar só nas primeiras fotos.
+    for (let start = 0; ; start += batchSize) {
+      const { data, error } = await api
+        .from('posts')
+        .select('id,image_url,caption,created_at')
+        .eq('author_id', accountId)
+        .is('hidden_at', null)
+        .order('created_at', { ascending: false })
+        .range(start, start + batchSize - 1);
+
+      if (error) throw error;
+      posts.push(...(data || []));
+      if (!data || data.length < batchSize) break;
+    }
+
+    if (uid() !== accountId ||
+        app.page !== 'cantinho' ||
+        !box.isConnected) return;
+
+    if (!posts.length) {
+      box.innerHTML =
+        '<p>Ainda não tem foto tua publicada. 📸</p>';
+      return;
+    }
+
+    const cards = [];
+
+    // A contagem "exact" evita cortar curtidas ou comentários
+    // quando uma publicação tiver muitas interações.
+    for (let start = 0; start < posts.length; start += 10) {
+      const group = posts.slice(start, start + 10);
+
+      const results = await Promise.all(group.map(async post => {
+        const [likesResult, commentsResult] =
+          await Promise.all([
+            api.from('post_likes')
+              .select('post_id', { count: 'exact', head: true })
+              .eq('post_id', post.id),
+            api.from('comments')
+              .select('id', { count: 'exact', head: true })
+              .eq('post_id', post.id)
+              .is('hidden_at', null)
+          ]);
+
+        if (likesResult.error) throw likesResult.error;
+        if (commentsResult.error) throw commentsResult.error;
+
+        return {
+          post,
+          likes: likesResult.count ?? 0,
+          comments: commentsResult.count ?? 0
+        };
+      }));
+
+      cards.push(...results);
+    }
+
+    if (uid() !== accountId ||
+        app.page !== 'cantinho' ||
+        !box.isConnected) return;
+
+    box.innerHTML = `
+      <p style="margin:0 0 14px">
+        ${cards.length}
+        ${cards.length === 1 ? 'publicação' : 'publicações'}
+      </p>
+
+      <div style="display:grid;
+                  grid-template-columns:repeat(3,minmax(0,1fr));
+                  gap:8px">
+        ${cards.map(({ post, likes, comments }) => `
+          <article style="min-width:0">
+            <button type="button"
+                    data-cantinho-foto="${safe(post.id)}"
+                    aria-label="Abrir foto"
+                    style="display:block;width:100%;
+                           padding:0;border:0;
+                           background:#eaf2fc;
+                           border-radius:10px;
+                           overflow:hidden;cursor:pointer">
+              <img src="${safe(post.image_url)}"
+                   alt="${safe(post.caption || 'Foto da feira')}"
+                   loading="lazy"
+                   style="display:block;width:100%;
+                          aspect-ratio:1;object-fit:cover">
+            </button>
+
+            <div style="display:flex;gap:12px;
+                        flex-wrap:wrap;padding:8px 2px;
+                        font-size:.85rem">
+              <span aria-label="${likes} curtidas">♥ ${likes}</span>
+              <span aria-label="${comments} comentários">
+                💬 ${comments}
+              </span>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    `;
+
+    box.querySelectorAll('[data-cantinho-foto]').forEach(button => {
+      button.onclick = () => {
+        const post = posts.find(
+          item => item.id === button.dataset.cantinhoFoto
+        );
+        if (!post) return;
+
+        fcModal(`
+          <h2>Foto da feira 📸</h2>
+          <img class="fc-photo"
+               src="${safe(post.image_url)}"
+               alt="${safe(post.caption || 'Foto da feira')}">
+          <p>${safe(post.caption || '')}</p>
+        `);
+      };
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (box.isConnected && app.page === 'cantinho') {
+      box.textContent =
+        'Não consegui carregar tuas fotos: ' +
+        (error?.message || 'tenta novamente.');
+    }
+  }
+}
 function person(id){return app.profiles?.find(p=>p.id===id)?.name||'Participante'}
 function standName(id){return app.stands.find(s=>s.id===id)?.name||''}
 function photoCard(p,large=false){const n=Number(p.likes_count||0),comments=Number(p.comments_count||0),s=app.stands.find(x=>x.id===p.stand_id);
