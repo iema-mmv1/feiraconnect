@@ -379,6 +379,9 @@ body.fc-inside {
 #fc-app.fc-dashboard-mode > header {
   display: none !important;
 }
+#fc-app [data-expand] {
+  touch-action: manipulation;
+}
 </style>
 <div id="fc-app" aria-label="Feira Connect"><header><span class="fc-brand">✦ FEIRA CONNECT</span><nav id="fc-nav" aria-label="Navegação principal"></nav><button id="fc-bell" class="fc-alt" type="button" aria-label="Notificações">🔔 <span id="fc-bell-count"></span></button><button id="fc-profile" class="fc-alt" type="button">Perfil</button></header><main id="fc-main" tabindex="-1"></main></div>
 <dialog id="fc-dialog" aria-label="Janela do aplicativo"></dialog>
@@ -1231,7 +1234,25 @@ window.fcRender()};
 document.querySelectorAll('[data-new-post]').forEach(b=>b.onclick=newPost);
 document.querySelectorAll('[data-like]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.like));
 document.querySelectorAll('[data-comments]').forEach(b=>b.onclick=()=>showComments(b.dataset.comments));
-document.querySelectorAll('[data-expand]').forEach(b=>b.onclick=()=>expandPhoto(b.dataset.expand));
+document.querySelectorAll('[data-expand]').forEach(button => {
+  let tapTimer = null;
+
+  button.onclick = event => {
+    event.preventDefault();
+
+    if (tapTimer !== null) {
+      clearTimeout(tapTimer);
+      tapTimer = null;
+      toggleLike(button.dataset.expand);
+      return;
+    }
+
+    tapTimer = setTimeout(() => {
+      tapTimer = null;
+      expandPhoto(button.dataset.expand);
+    }, 300);
+  };
+});
 document.querySelectorAll('[data-report-post]').forEach(b=>b.onclick=()=>reportContent('foto',b.dataset.reportPost))}
 /* PARTE 7: perfil, notificações, histórias e conversas. Continua o script da Parte 6. */
 window.fcProfile=()=>{if(!uid())return `<h1>Seu perfil</h1><p>Você está visitando a feira sem entrar.</p><button id="fc-profile-login" type="button">Entrar</button><button id="fc-profile-register" type="button">Criar conta</button>`;
