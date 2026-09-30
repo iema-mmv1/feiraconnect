@@ -1222,6 +1222,142 @@ if(close)close.onclick=closeFair;
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=e=>{e.preventDefault();setPage(b.dataset.go)})}
 // Estandes: define a tela e liga os controles que já são chamados por fcBindPage.
 window.fcStands = () => `
+window.fcMyStand = () => {
+  if (!uid()) {
+    return `
+      <div class="fc-card">
+        <h1>Meu estande 🎪</h1>
+        <p>Entra na tua conta para cuidar do estande.</p>
+      </div>
+    `;
+  }
+
+  if (!isResponsible()) {
+    return `
+      <div class="fc-card">
+        <h1>Meu estande 🎪</h1>
+        <p>Esta área é para contas autorizadas como responsáveis
+           por estande.</p>
+      </div>
+    `;
+  }
+
+  const ownStand = app.stands.find(
+    stand => stand.owner_id === uid()
+  );
+
+  queueMicrotask(() => {
+    if (app.page !== 'meu-estande') return;
+
+    const form = document.getElementById('fc-my-stand-form');
+    if (!form) return;
+
+    form.onsubmit = async event => {
+      event.preventDefault();
+
+      const button =
+        document.getElementById('fc-my-stand-save');
+      const message =
+        document.getElementById('fc-my-stand-message');
+
+      const name =
+        form.elements.namedItem('name').value.trim();
+      const description =
+        form.elements.namedItem('description').value.trim();
+      const character_name =
+        form.elements.namedItem('character_name').value.trim();
+
+      if (!name) {
+        message.textContent = 'Escreve o nome do estande.';
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Salvando...';
+      message.textContent = '';
+
+      try {
+        const values = {
+          name,
+          description: description || null,
+          character_name: character_name || null
+        };
+
+        if (ownStand) {
+          await update('stands', ownStand.id, values);
+        } else {
+          await insert('stands', {
+            ...values,
+            owner_id: uid()
+          });
+        }
+
+        await refresh();
+        window.fcHint?.(
+          ownStand
+            ? 'Estande atualizado! 🎪'
+            : 'Estande cadastrado! Bora mostrar pra galera 🎪'
+        );
+      } catch (error) {
+        console.error(error);
+        message.textContent =
+          error?.message || 'Não consegui salvar o estande.';
+      } finally {
+        if (button.isConnected) {
+          button.disabled = false;
+          button.textContent = 'Salvar estande';
+        }
+      }
+    };
+  });
+
+  return `
+    <div style="max-width:800px;margin:24px auto">
+      <section class="fc-card">
+        <h1>Meu estande 🎪</h1>
+        <p>
+          ${ownStand
+            ? 'Atualiza a apresentação do teu estande.'
+            : 'Apresenta teu estande para a galera da feira!'}
+        </p>
+
+        <form id="fc-my-stand-form">
+          <label>
+            Nome do estande
+            <input name="name"
+                   required maxlength="120"
+                   value="${html(ownStand?.name || '')}"
+                   placeholder="Como a galera vai conhecer teu estande?">
+          </label>
+
+          <label>
+            Descrição
+            <textarea name="description"
+                      maxlength="2000"
+                      placeholder="Conta o que vai rolar no teu estande"
+            >${html(ownStand?.description || '')}</textarea>
+          </label>
+
+          <label>
+            Nome do personagem (opcional)
+            <input name="character_name"
+                   maxlength="120"
+                   value="${html(ownStand?.character_name || '')}"
+                   placeholder="Qual o nome do mascote?">
+          </label>
+
+          <p id="fc-my-stand-message"
+             role="alert"
+             style="color:#a51c48"></p>
+
+          <button id="fc-my-stand-save" type="submit">
+            Salvar estande
+          </button>
+        </form>
+      </section>
+    </div>
+  `;
+};
   <h1>Estandes da feira 🎪</h1>
   <p>Conhece a galera antes de dar teu voto!</p>
   <div class="fc-grid">
