@@ -221,8 +221,8 @@ const signup=document.createElement('button');signup.type='button';signup.classN
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){'use strict';
-const SUPABASE_URL='COLE_AQUI_A_URL_DO_PROJETO';
-const SUPABASE_ANON_KEY='COLE_AQUI_A_CHAVE_PUBLICA_ANON';
+const SUPABASE_URL='https://boozkptdjgdcgmlngntb.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_lpKEYSd5cZaWnVywIfxiVA_DHq4RnMH';
 const configured=SUPABASE_URL.startsWith('https://')&&SUPABASE_ANON_KEY.length>30;
 const api=configured?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}}):null;
 const $=id=>document.getElementById(id);
