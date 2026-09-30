@@ -680,26 +680,15 @@ async function fcLoadCantinhoFotos() {
     button.textContent = 'Removendo...';
 
     try {
-      const { error } = await api
-  .from('posts')
-  .update({ hidden_at: new Date().toISOString() })
-  .eq('id', photoId)
-  .eq('author_id', accountId);
+      const { data: removed, error } = await api.rpc(
+        'fc_remove_own_photo',
+        { p_post_id: photoId }
+      );
 
-if (error) throw error;
-
-const { data: stillVisible, error: checkError } = await api
-  .from('posts')
-  .select('id')
-  .eq('id', photoId)
-  .eq('author_id', accountId)
-  .is('hidden_at', null)
-  .maybeSingle();
-
-if (checkError) throw checkError;
-if (stillVisible) {
-  throw new Error('A foto continua visível. Verifica a permissão de atualização da publicação.');
-}
+      if (error) throw error;
+      if (!removed) {
+        throw new Error('Foto não encontrada ou não pertence à tua conta.');
+      }
 
       await refresh();
       await fcLoadCantinhoFotos();
@@ -707,6 +696,7 @@ if (stillVisible) {
     } catch (error) {
       console.error(error);
       alert(error.message || 'Não consegui remover a foto.');
+
       if (button.isConnected) {
         button.disabled = false;
         button.textContent = 'Remover foto';
@@ -714,7 +704,7 @@ if (stillVisible) {
     }
   };
 });
-  } catch (error) {
+} catch (error) {
     console.error(error);
 
     if (box.isConnected && app.page === 'cantinho') {
