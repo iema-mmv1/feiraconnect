@@ -822,8 +822,7 @@ function newPost(){
 
  const frameChoice=$('fc-post-frame-choice');
 
- const applyFramePreview=()=>{
-  const preview=$('fc-post-preview');
+ Object.assign(preview.style,chosenStyle);
 
   const styles={
    none:{
