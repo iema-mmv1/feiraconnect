@@ -1221,7 +1221,6 @@ const close=$('fc-close-fair');
 if(close)close.onclick=closeFair;
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=e=>{e.preventDefault();setPage(b.dataset.go)})}
 // Estandes: define a tela e liga os controles que já são chamados por fcBindPage.
-window.fcStands = () => `
 window.fcMyStand = () => {
   if (!uid()) {
     return `
@@ -1358,6 +1357,8 @@ window.fcMyStand = () => {
     </div>
   `;
 };
+
+window.fcStands = () => `
   <h1>Estandes da feira 🎪</h1>
   <p>Conhece a galera antes de dar teu voto!</p>
   <div class="fc-grid">
@@ -1373,6 +1374,28 @@ window.fcMyStand = () => {
   </div>
 `;
 
+function bindStands() {
+  document.querySelectorAll('[data-fc-stand-detail]').forEach(button => {
+    button.onclick = () => {
+      const st = app.stands.find(
+        item => item.id === button.dataset.fcStandDetail
+      );
+      if (!st) return;
+
+      fcModal(`
+        <h2>${html(st.name)}</h2>
+        <p>${html(
+          st.description ||
+          'Esse estande ainda está preparando sua apresentação.'
+        )}</p>
+        ${st.image_url
+          ? `<img class="fc-photo" src="${html(st.image_url)}"
+                  alt="Foto do estande ${html(st.name)}">`
+          : ''}
+      `);
+    };
+  });
+}
 function bindStands() {
   document.querySelectorAll('[data-fc-stand-detail]').forEach(button => {
     button.onclick = () => {
