@@ -822,7 +822,10 @@ applyFramePreview(); };
 
  const frameChoice=$('fc-post-frame-choice');
 
-  const styles={
+ const applyFramePreview=()=>{
+  const preview=$('fc-post-preview');
+
+   const styles={
    none:{
     border:'0',
     padding:'0',
@@ -881,8 +884,9 @@ applyFramePreview(); };
    }
   };
 
-  const chosenStyle=styles[frameChoice.value]||styles.none;
-  preview.style.boxSizing='border-box';
+     const chosenStyle=styles[frameChoice.value]||styles.none;
+   Object.assign(preview.style,chosenStyle);
+   preview.style.boxSizing='border-box';
  };
 
  frameChoice.onchange=applyFramePreview;
