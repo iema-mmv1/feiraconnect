@@ -780,32 +780,68 @@ function fcOpenProfilePanel() {
 
   fcProfilePhotoFile = null;
   const profile = app.profile || {};
-  const currentName = profile.name || app.user?.user_metadata?.name || '';
+  const currentName =
+    profile.name || app.user?.user_metadata?.name || '';
   const currentPhoto = profile.avatar_url || '';
+  let removePhoto = false;
 
-  fcModal(`
-    <section style="width:min(460px,85vw);padding:8px 10px 16px">
-      <div style="text-align:center;padding:18px 12px;border-radius:18px;
+  // Evita deixar dois painéis de perfil abertos.
+  document.getElementById('fc-profile-drawer-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'fc-profile-drawer-overlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
+    background:rgba(15,23,42,.48);
+    opacity:0;transition:opacity .22s ease;
+  `;
+
+  overlay.innerHTML = `
+    <aside id="fc-profile-drawer"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="fc-profile-drawer-title"
+           style="position:absolute;top:0;right:0;bottom:0;
+                  width:min(460px,100vw);box-sizing:border-box;
+                  overflow-y:auto;background:#fff;
+                  box-shadow:-12px 0 35px rgba(0,0,0,.18);
+                  transform:translateX(100%);
+                  transition:transform .22s ease;
+                  padding:20px 18px 28px">
+      <div style="display:flex;justify-content:flex-end">
+        <button id="fc-profile-panel-close"
+                type="button"
+                aria-label="Fechar perfil"
+                style="font-size:1.6rem;line-height:1;
+                       border:0;background:transparent;
+                       cursor:pointer;padding:6px 10px">×</button>
+      </div>
+
+      <div style="text-align:center;padding:18px 12px;
+                  border-radius:18px;
                   background:linear-gradient(120deg,#def3ff,#ffe3ef)">
-        <h2 style="margin:0 0 8px">Teu cantinho na feira ✨</h2>
+        <h2 id="fc-profile-drawer-title" style="margin:0 0 8px">
+          Teu perfil ✨
+        </h2>
         <p>Uma foto e um nome pra galera te reconhecer!</p>
 
         <div style="position:relative;width:90px;height:90px;
-            border:4px solid white;border-radius:50%;
-            overflow:hidden;margin:12px auto;
-            display:grid;place-items:center;background:#ffd8c0">
-  <img id="fc-profile-panel-preview"
-       src="${html(currentPhoto)}"
-       alt="Prévia da sua foto de perfil"
-       style="position:absolute;inset:0;
-              width:100%;height:100%;
-              max-width:100%;max-height:100%;
-              object-fit:cover;border-radius:50%;
-              display:${currentPhoto ? 'block' : 'none'}">
-  <span id="fc-profile-panel-placeholder"
-        style="font-size:2.2rem;
-               display:${currentPhoto ? 'none' : 'block'}">👤</span>
-</div>
+                    border:4px solid white;border-radius:50%;
+                    overflow:hidden;margin:12px auto;
+                    display:grid;place-items:center;
+                    background:#ffd8c0">
+          <img id="fc-profile-panel-preview"
+               src="${html(currentPhoto)}"
+               alt="Prévia da sua foto de perfil"
+               style="position:absolute;inset:0;width:100%;
+                      height:100%;object-fit:cover;
+                      border-radius:50%;
+                      display:${currentPhoto ? 'block' : 'none'}">
+          <span id="fc-profile-panel-placeholder"
+                style="font-size:2.2rem;
+                       display:${currentPhoto ? 'none' : 'block'}">👤</span>
+        </div>
+
         <strong>${html(currentName || 'Participante')}</strong>
         <p style="font-size:.8rem">${html(app.user?.email || '')}</p>
       </div>
@@ -816,17 +852,31 @@ function fcOpenProfilePanel() {
           <input name="name" required maxlength="100"
                  value="${html(currentName)}"
                  style="display:block;width:100%;padding:10px;
-                        border:1px solid #bfd0e6;border-radius:10px">
+                        box-sizing:border-box;
+                        border:1px solid #bfd0e6;
+                        border-radius:10px">
         </label>
 
-        <input id="fc-profile-panel-file" type="file"
-               accept="image/*" hidden>
-        <button id="fc-profile-panel-choose" type="button" class="fc-alt">
+        <input id="fc-profile-panel-file"
+               type="file" accept="image/*" hidden>
+
+        <button id="fc-profile-panel-choose"
+                type="button" class="fc-alt">
           📷 Escolher foto do perfil
         </button>
+
+        <button id="fc-profile-panel-remove"
+                type="button" class="fc-alt"
+                style="margin-top:8px">
+          Remover foto
+        </button>
+
         <p id="fc-profile-panel-status" role="status">
-          ${currentPhoto ? 'Foto atual carregada.' : 'Nenhuma foto adicionada ainda.'}
+          ${currentPhoto
+            ? 'Foto atual carregada.'
+            : 'Nenhuma foto adicionada ainda.'}
         </p>
+
         <p id="fc-profile-panel-error" role="alert"
            style="display:none;padding:10px;border-radius:10px;
                   background:#fff0f2;color:#8b1636"></p>
@@ -836,240 +886,180 @@ function fcOpenProfilePanel() {
         </button>
       </form>
 
-      <button id="fc-profile-panel-logout" type="button"
-              class="fc-danger" style="margin-top:14px">
+      <button id="fc-profile-panel-logout"
+              type="button" class="fc-danger"
+              style="margin-top:14px">
         Sair da conta
       </button>
-      <div style="margin-top:22px;border-top:1px solid #dce9f6;padding-top:16px">
-  <h3 style="margin:0 0 6px">Tuas fotos na feira 📸</h3>
-  <p style="margin:0 0 12px">Olha a moral que a galera deu pra cada momento!</p>
-  <div id="fc-my-photos"
-       style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-              gap:10px">
-    <p>Carregando tuas fotos...</p>
-  </div>
-</div>
-    </section>
-  `);
-async function fcLoadMyPhotos() {
-  const box = document.getElementById('fc-my-photos');
-  if (!box) return;
+    </aside>
+  `;
 
-  try {
-    const { data: posts, error: postsError } = await api
-      .from('posts')
-      .select('id,image_url,caption,created_at')
-      .eq('author_id', uid())
-      .is('hidden_at', null)
-      .order('created_at', { ascending: false });
+  document.body.appendChild(overlay);
 
-    if (postsError) throw postsError;
+  const drawer = overlay.querySelector('#fc-profile-drawer');
+  const picker = overlay.querySelector('#fc-profile-panel-file');
+  const preview = overlay.querySelector('#fc-profile-panel-preview');
+  const placeholder =
+    overlay.querySelector('#fc-profile-panel-placeholder');
+  const status =
+    overlay.querySelector('#fc-profile-panel-status');
 
-    if (!posts?.length) {
-      box.innerHTML =
-        '<p>Ainda não tem foto tua por aqui. Bora postar a primeira? 📸</p>';
-      return;
+  let closing = false;
+
+  function closeProfilePanel() {
+    if (closing) return;
+    closing = true;
+
+    document.removeEventListener('keydown', onProfileKeydown);
+    overlay.style.opacity = '0';
+    drawer.style.transform = 'translateX(100%)';
+
+    setTimeout(() => {
+      overlay.remove();
+      if (fcProfilePreviewUrl) {
+        URL.revokeObjectURL(fcProfilePreviewUrl);
+        fcProfilePreviewUrl = null;
+      }
+    }, 220);
+  }
+
+  function onProfileKeydown(event) {
+    if (event.key === 'Escape') closeProfilePanel();
+  }
+
+  document.addEventListener('keydown', onProfileKeydown);
+
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    drawer.style.transform = 'translateX(0)';
+    overlay.querySelector('#fc-profile-panel-close').focus();
+  });
+
+  // Só fecha se o clique foi no fundo, não dentro do painel.
+  overlay.addEventListener('click', event => {
+    if (event.target === overlay) closeProfilePanel();
+  });
+
+  overlay.querySelector('#fc-profile-panel-close').onclick =
+    closeProfilePanel;
+
+  overlay.querySelector('#fc-profile-panel-choose').onclick =
+    () => picker.click();
+
+  overlay.querySelector('#fc-profile-panel-remove').onclick = () => {
+    removePhoto = true;
+    fcProfilePhotoFile = null;
+    picker.value = '';
+
+    if (fcProfilePreviewUrl) {
+      URL.revokeObjectURL(fcProfilePreviewUrl);
+      fcProfilePreviewUrl = null;
     }
 
-    const ids = posts.map(post => post.id);
-
-    const [
-      { data: likes, error: likesError },
-      { data: comments, error: commentsError }
-    ] = await Promise.all([
-      api.from('post_likes')
-        .select('post_id,user_id')
-        .in('post_id', ids),
-      api.from('comments')
-        .select('post_id,id')
-        .in('post_id', ids)
-        .is('hidden_at', null)
-    ]);
-
-    if (likesError) throw likesError;
-    if (commentsError) throw commentsError;
-
-    box.innerHTML = posts.map(post => {
-      const totalLikes = (likes || [])
-        .filter(like => like.post_id === post.id).length;
-      const totalComments = (comments || [])
-        .filter(comment => comment.post_id === post.id).length;
-
-      return `
-        <article style="border:1px solid #dce9f6;border-radius:12px;
-                        overflow:hidden;background:white">
-          <button type="button" data-fc-my-photo="${html(post.id)}"
-                  aria-label="Abrir foto"
-                  style="display:block;width:100%;padding:0;
-                         border:0;background:none">
-            <img src="${html(post.image_url)}"
-                 alt="${html(post.caption || 'Foto da feira')}"
-                 style="display:block;width:100%;height:135px;
-                        object-fit:cover">
-          </button>
-          <div style="display:flex;gap:5px;padding:6px">
-            <button type="button" data-fc-my-likes="${html(post.id)}"
-                    aria-label="Ver curtidas">♥ ${totalLikes}</button>
-            <button type="button" data-fc-my-comments="${html(post.id)}"
-                    aria-label="Ver comentários">💬 ${totalComments}</button>
-          </div>
-        </article>
-      `;
-    }).join('');
-
-    box.querySelectorAll('[data-fc-my-photo]').forEach(button => {
-      button.onclick = () => {
-        const postId = button.dataset.fcMyPhoto;
-        document.getElementById('fc-dialog').close();
-        expandPhoto(postId);
-
-        // Mantém o atalho para comentários funcional também na foto aberta.
-        const commentsButton = document.getElementById('fc-open-comments');
-        if (commentsButton) {
-          commentsButton.onclick = () => {
-            document.getElementById('fc-dialog').close();
-            showComments(postId);
-          };
-        }
-      };
-    });
-
-    box.querySelectorAll('[data-fc-my-comments]').forEach(button => {
-      button.onclick = () => {
-        document.getElementById('fc-dialog').close();
-        showComments(button.dataset.fcMyComments);
-      };
-    });
-
-    box.querySelectorAll('[data-fc-my-likes]').forEach(button => {
-      button.onclick = async () => {
-        try {
-          const peopleIds = (likes || [])
-            .filter(like => like.post_id === button.dataset.fcMyLikes)
-            .map(like => like.user_id);
-
-          if (!peopleIds.length) {
-            window.fcHint?.('Essa foto ainda espera a primeira curtida!');
-            return;
-          }
-
-          const { data: people, error } = await api
-            .from('profiles')
-            .select('id,name')
-            .in('id', peopleIds);
-
-          if (error) throw error;
-
-          document.getElementById('fc-dialog').close();
-          fcModal(`
-            <h2>Quem deu moral pra essa foto? ♥</h2>
-            ${(people || [])
-              .map(person => `<p>${html(person.name || 'Participante')}</p>`)
-              .join('') || '<p>Não foi possível mostrar os nomes.</p>'}
-          `);
-        } catch (error) {
-          console.error(error);
-          window.fcHint?.(
-            error?.message || 'Não consegui carregar as curtidas.'
-          );
-        }
-      };
-    });
-  } catch (error) {
-    console.error(error);
-    box.textContent =
-      'Não consegui carregar tuas fotos: ' +
-      (error?.message || 'tenta novamente.');
-  }
-}
-
-fcLoadMyPhotos();
-  
-  const picker = document.getElementById('fc-profile-panel-file');
-  document.getElementById('fc-profile-panel-choose').onclick = () => picker.click();
+    preview.removeAttribute('src');
+    preview.style.display = 'none';
+    placeholder.style.display = 'block';
+    status.textContent =
+      'Foto removida da prévia. Salva para confirmar.';
+  };
 
   picker.onchange = event => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/') || file.size > 6 * 1024 * 1024) {
+    if (!file.type.startsWith('image/') ||
+        file.size > 6 * 1024 * 1024) {
       fcProfileError('Escolhe uma imagem de até 6 MB.');
+      picker.value = '';
       return;
     }
 
+    removePhoto = false;
     fcProfilePhotoFile = file;
-    document.getElementById('fc-profile-panel-status').textContent =
-      `Foto selecionada: ${file.name}`;
+    status.textContent = `Foto selecionada: ${file.name}`;
 
-    if (fcProfilePreviewUrl) URL.revokeObjectURL(fcProfilePreviewUrl);
+    if (fcProfilePreviewUrl) {
+      URL.revokeObjectURL(fcProfilePreviewUrl);
+    }
+
     fcProfilePreviewUrl = URL.createObjectURL(file);
-
-    const preview = document.getElementById('fc-profile-panel-preview');
     preview.src = fcProfilePreviewUrl;
     preview.style.display = 'block';
-    document.getElementById('fc-profile-panel-placeholder').style.display = 'none';
+    placeholder.style.display = 'none';
   };
 
-  document.getElementById('fc-profile-panel-form').onsubmit = async event => {
-    event.preventDefault();
+  overlay.querySelector('#fc-profile-panel-form').onsubmit =
+    async event => {
+      event.preventDefault();
 
-    const form = event.currentTarget;
-    const button = document.getElementById('fc-profile-panel-save');
-    const name = form.elements.namedItem('name').value.trim();
+      const form = event.currentTarget;
+      const button =
+        overlay.querySelector('#fc-profile-panel-save');
+      const name =
+        form.elements.namedItem('name').value.trim();
 
-    if (!name) {
-      fcProfileError('Escreve teu nome ou nick.');
-      return;
-    }
-
-    button.disabled = true;
-    button.textContent = 'Salvando...';
-
-    try {
-      let avatar_url = app.profile?.avatar_url || null;
-
-      if (fcProfilePhotoFile) {
-        avatar_url = await upload('avatars', fcProfilePhotoFile);
+      if (!name) {
+        fcProfileError('Escreve teu nome ou nick.');
+        return;
       }
 
-      if (app.profile) {
-        app.profile = await update('profiles', uid(), { name, avatar_url });
-      } else {
-        const { data, error } = await api.from('profiles')
-          .upsert(
-            { id: uid(), name, avatar_url },
-            { onConflict: 'id' }
-          )
-          .select()
-          .single();
+      button.disabled = true;
+      button.textContent = 'Salvando...';
 
-        if (error) throw error;
-        app.profile = data;
+      try {
+        let avatar_url = removePhoto
+          ? null
+          : (app.profile?.avatar_url || null);
+
+        if (fcProfilePhotoFile) {
+          avatar_url =
+            await upload('avatars', fcProfilePhotoFile);
+        }
+
+        if (app.profile) {
+          app.profile = await update('profiles', uid(), {
+            name,
+            avatar_url
+          });
+        } else {
+          const { data, error } = await api
+            .from('profiles')
+            .upsert(
+              { id: uid(), name, avatar_url },
+              { onConflict: 'id' }
+            )
+            .select()
+            .single();
+
+          if (error) throw error;
+          app.profile = data;
+        }
+
+        fcProfilePhotoFile = null;
+        closeProfilePanel();
+        window.fcRender?.();
+        window.fcHint?.('Perfil atualizado! Ficou tua cara 😎');
+      } catch (error) {
+        console.error(error);
+        fcProfileError(
+          error?.message || 'Não consegui salvar teu perfil.'
+        );
+      } finally {
+        if (button.isConnected) {
+          button.disabled = false;
+          button.textContent = 'Salvar alterações';
+        }
       }
+    };
 
-      fcProfilePhotoFile = null;
-      document.getElementById('fc-dialog').close();
-      window.fcRender?.();
-      window.fcHint?.('Perfil atualizado! Ficou tua cara 😎');
-    } catch (error) {
-      console.error(error);
-      fcProfileError(error?.message || 'Não consegui salvar teu perfil.');
-    } finally {
-      if (button.isConnected) {
-        button.disabled = false;
-        button.textContent = 'Salvar alterações';
-      }
-    }
-  };
-
-  document.getElementById('fc-profile-panel-logout').onclick = async () => {
-    document.getElementById('fc-dialog').close();
-    await signOut();
-  };
+  overlay.querySelector('#fc-profile-panel-logout').onclick =
+    async () => {
+      closeProfilePanel();
+      await signOut();
+    };
 }
 
-// O clique é capturado antes do data-go="perfil" existente.
-// Nenhuma alteração no HTML do dashboard é necessária.
+// Clique do perfil no dashboard.
 document.addEventListener('click', event => {
   const target = event.target instanceof Element
     ? event.target.closest('.fc-dashboard [data-go="perfil"]')
