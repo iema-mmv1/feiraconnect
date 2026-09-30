@@ -646,7 +646,7 @@ async function fcLoadCantinhoFotos() {
   Remover foto
 </button>
 </article>
-          </article>
+        
         `).join('')}
       </div>
     `;
@@ -667,6 +667,43 @@ async function fcLoadCantinhoFotos() {
         `);
       };
     });
+    box.querySelectorAll('[data-cantinho-remover]').forEach(button => {
+  button.onclick = async () => {
+    const photoId = button.dataset.cantinhoRemover;
+    const accountId = uid();
+
+    if (!accountId || !confirm('Remover esta foto do mural e do Meu cantinho?')) {
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Removendo...';
+
+    try {
+      const { data, error } = await api
+        .from('posts')
+        .update({ hidden_at: new Date().toISOString() })
+        .eq('id', photoId)
+        .eq('author_id', accountId)
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('Foto não encontrada ou sem permissão para remover.');
+
+      await refresh();
+      await fcLoadCantinhoFotos();
+      window.fcHint?.('Foto removida.');
+    } catch (error) {
+      console.error(error);
+      alert(error.message || 'Não consegui remover a foto.');
+      if (button.isConnected) {
+        button.disabled = false;
+        button.textContent = 'Remover foto';
+      }
+    }
+  };
+});
   } catch (error) {
     console.error(error);
 
