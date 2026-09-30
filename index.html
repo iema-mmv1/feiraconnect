@@ -635,6 +635,17 @@ async function fcLoadCantinhoFotos() {
                 💬 ${comments}
               </span>
             </div>
+            <span aria-label="${comments} comentários">💬 ${comments}</span>
+</div>
+<button
+  type="button"
+  class="fc-danger"
+  data-cantinho-remover="${safe(post.id)}"
+  style="margin-top:4px;width:100%"
+>
+  Remover foto
+</button>
+</article>
           </article>
         `).join('')}
       </div>
