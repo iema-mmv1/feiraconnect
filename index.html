@@ -406,12 +406,17 @@ window.fcRender?.();
 $('fc-main')?.focus();
 window.scrollTo(0,0)}window.fcPage=setPage;
 function nav(){
-$('fc-nav').innerHTML=`<button type="button" class="fc-alt" data-page="inicio">← Voltar</button>`;
+const isHome=app.page==='inicio';
+
+$('fc-nav').innerHTML=isHome?'':`<button type="button" class="fc-alt" data-page="inicio">← Voltar</button>`;
+
+if(!isHome){
 $('fc-nav').querySelector('[data-page="inicio"]').onclick=()=>setPage('inicio');
-$('fc-profile').textContent=app.profile?.name||'Entrar / perfil';
-$('fc-bell-count').textContent=app.notifications.filter(n=>!n.read_at).length||''
 }
 
+$('fc-profile').textContent=app.profile?.name||'Entrar / perfil';
+$('fc-bell-count').textContent=app.notifications.filter(n=>!n.read_at).length||'';
+}
 window.fcRender=()=>{nav();
 const views={inicio:window.fcHome,mural:window.fcWall,cantinho:window.fcCantinho,estandes:window.fcStands,ranking:window.fcRanking,destaques:window.fcHighlights,mulheres:window.fcWomen,perfil:window.fcProfile,notificacoes:window.fcNotices,chat:window.fcChats,'meu-estande':window.fcMyStand,admin:window.fcAdmin,resultado:window.fcResult};
 $('fc-app').classList.toggle('fc-dashboard-mode',app.page==='inicio'); $('fc-main').innerHTML=views[app.page]?.()||'<div class="fc-card"><h1>Feira Connect</h1><p>Continue juntando as partes na ordem: as próximas incluem as telas e ações desta seção.</p></div>';
