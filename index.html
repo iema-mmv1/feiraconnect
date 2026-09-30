@@ -1215,10 +1215,57 @@ await insert('comments',{post_id:postId,author_id:uid(),body});
 await refresh();
 await showComments(postId)}catch(err){fail(err)}};
 $('fc-dialog').querySelectorAll('[data-report-comment]').forEach(b=>b.onclick=()=>reportContent('comentario',b.dataset.reportComment))}catch(e){fail(e)}}
-async function expandPhoto(id){const p=app.posts.find(x=>x.id===id);
-if(!p)return;
-fcModal(`<h2>Foto da feira</h2><img class="fc-photo" src="${safe(p.image_url)}" alt="Foto ampliada"><p>${safe(p.caption||'')}</p><button type="button" id="fc-open-comments">Ver comentários</button>`);
-$('fc-open-comments').onclick=()=>showComments(id)}
+async function expandPhoto(id) {
+  const p = app.posts.find(item => item.id === id);
+  if (!p) return;
+
+  fcModal(`
+    <h2>Foto da feira</h2>
+    <img
+      id="fc-expanded-photo"
+      class="fc-photo"
+      src="${safe(p.image_url)}"
+      alt="Foto ampliada"
+      style="touch-action:manipulation"
+    >
+    <p>${safe(p.caption || '')}</p>
+    <button type="button" id="fc-photo-like">
+      💗 ${Number(p.likes_count || 0)}
+    </button>
+    <button type="button" id="fc-open-comments">
+      Ver comentários
+    </button>
+  `);
+
+  const likeButton = $('fc-photo-like');
+
+  likeButton.onclick = async () => {
+    likeButton.disabled = true;
+    try {
+      await toggleLike(id);
+      const updated = app.posts.find(item => item.id === id);
+      if (likeButton.isConnected) {
+        likeButton.textContent = `💗 ${Number(updated?.likes_count || 0)}`;
+      }
+    } finally {
+      if (likeButton.isConnected) likeButton.disabled = false;
+    }
+  };
+
+  let lastTap = 0;
+  $('fc-expanded-photo').onclick = () => {
+    const now = Date.now();
+
+    if (now - lastTap < 350) {
+      lastTap = 0;
+      likeButton.click();
+    } else {
+      lastTap = now;
+    }
+  };
+
+  $('fc-open-comments').onclick = () => showComments(id);
+}
 async function reportContent(kind,id){if(!mustLogin())return;
 fcModal(`<h2>Denunciar ${safe(kind)}</h2><p>O conteúdo denunciado fica oculto durante a análise, conforme regras do servidor.</p><form id="fc-report-form"><textarea name="reason" required maxlength="1500" placeholder="Explique o motivo"></textarea><button class="fc-danger" type="submit">Enviar denúncia</button></form>`);
 $('fc-report-form').onsubmit=async e=>{e.preventDefault();
