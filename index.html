@@ -214,7 +214,13 @@ document.getElementById('fc-guest-entry').addEventListener('click',openApp);
 document.getElementById('fc-bell').addEventListener('click',()=>window.fcPage?.('notificacoes'));
 document.getElementById('fc-profile').addEventListener('click',()=>window.fcPage?.('perfil'));
 document.querySelectorAll('[data-demo]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();if(el.classList.contains('forgot'))window.fcRecover?.();else hint('Esta ação será habilitada pela próxima parte do sistema.')}));
-const signup=document.createElement('button');signup.type='button';signup.className='primary';signup.style.marginTop='10px';signup.textContent='Criar conta';signup.addEventListener('click',()=>{openApp();window.fcPage?.('perfil');window.fcRegister?.()});loginForm.after(signup);
+const signup=document.createElement('button');signup.type='button';signup.className='primary';signup.style.marginTop='10px';signup.textContent='Criar conta';signup.addEventListener('click', () => {
+  if (typeof window.fcRegister === 'function') {
+    window.fcRegister();
+  } else {
+    hint('A função de cadastro ainda não foi carregada.');
+  }
+});loginForm.after(signup);
 })();
 </script>
 <!-- PARTE 4: núcleo do aplicativo. Colar imediatamente após a Parte 3. Não fechar este script; a Parte 5 continua aqui. -->
